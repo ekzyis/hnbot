@@ -78,3 +78,11 @@ func FetchStoryById(id ItemID) Story {
 
 	return story
 }
+
+func HackerNewsUserLink(user string) string {
+	return fmt.Sprintf("%s/user?id=%s", HackerNewsUrl, user)
+}
+
+func HackerNewsItemLink(id int) string {
+	return fmt.Sprintf("%s/item?id=%d", HackerNewsUrl, id)
+}

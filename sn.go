@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/dustin/go-humanize"
 	"github.com/joho/godotenv"
 	"github.com/namsral/flag"
 )
@@ -25,6 +27,16 @@ type Dupe struct {
 type DupesResponse struct {
 	Data struct {
 		Dupes []Dupe `json:"dupes"`
+	} `json:"data"`
+}
+
+type Item struct {
+	Id int `json:"id,string"`
+}
+
+type UpsertLinkResponse struct {
+	Data struct {
+		UpsertLink Item `json:"upsertLink"`
 	} `json:"data"`
 }
 
@@ -119,6 +131,40 @@ func PostStoryToStackerNews(story *Story) {
 		Variables: map[string]interface{}{
 			"url":   story.Url,
 			"title": story.Title,
+		},
+	}
+	resp := MakeStackerNewsRequest(body)
+	defer resp.Body.Close()
+
+	var upsertLinkResp UpsertLinkResponse
+	err := json.NewDecoder(resp.Body).Decode(&upsertLinkResp)
+	if err != nil {
+		log.Fatal("Error decoding dupes JSON:", err)
+	}
+
+	parentId := upsertLinkResp.Data.UpsertLink.Id
+	comment := fmt.Sprintf(
+		"This link was posted by [%s](%s) %s on [HN](%s). It received %d points and %d comments.",
+		story.By,
+		HackerNewsUserLink(story.By),
+		humanize.Time(time.Unix(int64(story.Time), 0)),
+		HackerNewsItemLink(story.ID),
+		story.Score, story.Descendants,
+	)
+	CommentStackerNewsPost(comment, parentId)
+}
+
+func CommentStackerNewsPost(text string, parentId int) {
+	body := GraphQLPayload{
+		Query: `
+			mutation createComment($text: String!, $parentId: ID!) {
+        createComment(text: $text, parentId: $parentId) {
+          id
+        }
+			}`,
+		Variables: map[string]interface{}{
+			"text":     text,
+			"parentId": parentId,
 		},
 	}
 	resp := MakeStackerNewsRequest(body)
