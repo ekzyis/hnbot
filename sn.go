@@ -34,17 +34,19 @@ type User struct {
 	Name string `json:"name"`
 }
 type Comment struct {
-	Id   int    `json:"id,string"`
-	Text string `json:"text"`
-	User User   `json:"user"`
+	Id       int       `json:"id,string"`
+	Text     string    `json:"text"`
+	User     User      `json:"user"`
+	Comments []Comment `json:"comments"`
 }
 type Item struct {
 	Id        int       `json:"id,string"`
 	Title     string    `json:"title"`
 	Url       string    `json:"url"`
 	Sats      int       `json:"sats"`
-	CreatedAt string    `json:"createdAt"`
+	CreatedAt time.Time `json:"createdAt"`
 	Comments  []Comment `json:"comments"`
+	NComments int       `json:"ncomments"`
 }
 
 type UpsertLinkResponse struct {
@@ -63,11 +65,13 @@ type ItemsResponse struct {
 }
 
 var (
-	SnApiUrl     string
-	SnAuthCookie string
+	StackerNewsUrl string
+	SnApiUrl       string
+	SnAuthCookie   string
 )
 
 func init() {
+	StackerNewsUrl = "https://stacker.news"
 	SnApiUrl = "https://stacker.news/api/graphql"
 	err := godotenv.Load()
 	if err != nil {
@@ -207,12 +211,22 @@ func FetchStackerNewsUserItems(user string) *[]Item {
 					title
 					url
 					sats
+					createdAt
 					comments {
+						id
 						text
 						user {
 							name
 						}
+						comments {
+							id
+							text
+							user {
+								name
+							}
+						}
 					}
+					ncomments
 				}
 				cursor
 			}
@@ -250,4 +264,8 @@ func FetchStackerNewsUserItems(user string) *[]Item {
 	log.Printf("Fetched %d items\n", len(items))
 
 	return &items
+}
+
+func StackerNewsItemLink(id int) string {
+	return fmt.Sprintf("%s/items/%d", StackerNewsUrl, id)
 }

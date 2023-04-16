@@ -159,3 +159,16 @@ func HackerNewsUserLink(user string) string {
 func HackerNewsItemLink(id int) string {
 	return fmt.Sprintf("%s/item?id=%d", HackerNewsUrl, id)
 }
+
+func FindHackerNewsItemId(text string) int {
+	re := regexp.MustCompile(fmt.Sprintf(`\[HN\]\(%s/item\?id=([0-9]+)\)`, HackerNewsUrl))
+	match := re.FindStringSubmatch(text)
+	if len(match) == 0 {
+		log.Fatal("No Hacker News item URL found")
+	}
+	id, err := strconv.Atoi(match[1])
+	if err != nil {
+		panic(err)
+	}
+	return id
+}
