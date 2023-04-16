@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -47,7 +48,7 @@ func postToSN(story *Story) {
 		panic(err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", AuthCookie)
+	req.Header.Set("Cookie", fmt.Sprintf("__Host-next-auth.csrf-token=%s", SnApiToken))
 
 	client := http.DefaultClient
 	resp, err := client.Do(req)

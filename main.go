@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	AuthCookie string
+	SnApiToken string
 )
 
 func init() {
@@ -16,17 +16,16 @@ func init() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	flag.StringVar(&AuthCookie, "auth_cookie", "", "Cookie required for authorization")
+	flag.StringVar(&SnApiToken, "NEXT_AUTH_CSRF_TOKEN", "", "Token required for authorizing requests to stacker.news/api/graphql")
 	flag.Parse()
-	if AuthCookie == "" {
-		log.Fatal("auth cookie not set")
+	if SnApiToken == "" {
+		log.Fatal("NEXT_AUTH_CSRF_TOKEN not set")
 	}
 }
 
 func main() {
 	stories := fetchTopStoriesFromHN()
 	filtered := filterByRelevanceForSN(&stories)
-	log.Println(filtered)
 	for _, story := range *filtered {
 		postToSN(&story)
 	}
