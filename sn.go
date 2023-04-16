@@ -51,10 +51,10 @@ func init() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	flag.StringVar(&SnAuthCookie, "AUTH_COOKIE", "", "Cookie required for authorizing requests to stacker.news/api/graphql")
+	flag.StringVar(&SnAuthCookie, "SN_AUTH_COOKIE", "", "Cookie required for authorizing requests to stacker.news/api/graphql")
 	flag.Parse()
 	if SnAuthCookie == "" {
-		log.Fatal("AUTH_COOKIE not set")
+		log.Fatal("SN_AUTH_COOKIE not set")
 	}
 }
 
