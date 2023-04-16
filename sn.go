@@ -30,13 +30,35 @@ type DupesResponse struct {
 	} `json:"data"`
 }
 
+type User struct {
+	Name string `json:"name"`
+}
+type Comment struct {
+	Id   int    `json:"id,string"`
+	Text string `json:"text"`
+	User User   `json:"user"`
+}
 type Item struct {
-	Id int `json:"id,string"`
+	Id        int       `json:"id,string"`
+	Title     string    `json:"title"`
+	Url       string    `json:"url"`
+	Sats      int       `json:"sats"`
+	CreatedAt string    `json:"createdAt"`
+	Comments  []Comment `json:"comments"`
 }
 
 type UpsertLinkResponse struct {
 	Data struct {
 		UpsertLink Item `json:"upsertLink"`
+	} `json:"data"`
+}
+
+type ItemsResponse struct {
+	Data struct {
+		Items struct {
+			Items  []Item `json:"items"`
+			Cursor string `json:"cursor"`
+		} `json:"items"`
 	} `json:"data"`
 }
 
@@ -175,4 +197,58 @@ func CommentStackerNewsPost(text string, parentId int) {
 	}
 	resp := MakeStackerNewsRequest(body)
 	defer resp.Body.Close()
+}
+
+func FetchStackerNewsUserItems(user string) *[]Item {
+	query := `
+		query items($name: String!, $cursor: String) {
+			items(name: $name, sort: "user", cursor: $cursor) {
+				items {
+					id
+					title
+					url
+					sats
+					comments {
+						text
+						user {
+							name
+						}
+					}
+				}
+				cursor
+			}
+		}
+	`
+	var items []Item
+	var cursor string
+	for {
+		body := GraphQLPayload{
+			Query: query,
+			Variables: map[string]interface{}{
+				"name":   user,
+				"cursor": cursor,
+			},
+		}
+		resp := MakeStackerNewsRequest(body)
+		defer resp.Body.Close()
+
+		var itemsResp ItemsResponse
+		err := json.NewDecoder(resp.Body).Decode(&itemsResp)
+		if err != nil {
+			log.Fatal("Error decoding items JSON:", err)
+		}
+		fetchedItems := itemsResp.Data.Items.Items
+
+		for _, item := range fetchedItems {
+			items = append(items, item)
+		}
+		if len(fetchedItems) < 21 {
+			break
+		}
+		cursor = itemsResp.Data.Items.Cursor
+	}
+
+	log.Printf("Fetched %d items\n", len(items))
+
+	return &items
 }
