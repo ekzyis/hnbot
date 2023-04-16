@@ -118,6 +118,7 @@ func FetchStackerNewsDupes(url string) *[]Dupe {
 func PostStoryToStackerNews(story *Story) {
 	dupes := FetchStackerNewsDupes(story.Url)
 	if len(*dupes) > 0 {
+		log.Printf("%s was already posted. Skipping.\n", story.Url)
 		return
 	}
 
@@ -141,8 +142,10 @@ func PostStoryToStackerNews(story *Story) {
 	if err != nil {
 		log.Fatal("Error decoding dupes JSON:", err)
 	}
-
 	parentId := upsertLinkResp.Data.UpsertLink.Id
+
+	log.Printf("Created new post on SN: id=%d url=%s\n", parentId, story.Url)
+
 	comment := fmt.Sprintf(
 		"This link was posted by [%s](%s) %s on [HN](%s). It received %d points and %d comments.",
 		story.By,
@@ -152,6 +155,9 @@ func PostStoryToStackerNews(story *Story) {
 		story.Score, story.Descendants,
 	)
 	CommentStackerNewsPost(comment, parentId)
+
+	log.Printf("Commented post on SN: parentId=%d text='%s'\n", parentId, comment)
+
 }
 
 func CommentStackerNewsPost(text string, parentId int) {
