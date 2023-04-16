@@ -111,12 +111,11 @@ func PostStoryToStackerNews(story *Story) {
 
 	body := GraphQLPayload{
 		Query: `
-            mutation upsertLink($url: String!, $title: String!) {
-                upsertLink(url: $url, title: $title) {
-                    id
-                }
-            }
-        `,
+			mutation upsertLink($url: String!, $title: String!) {
+				upsertLink(url: $url, title: $title) {
+					id
+				}
+			}`,
 		Variables: map[string]interface{}{
 			"url":   story.Url,
 			"title": story.Title,
