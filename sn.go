@@ -179,7 +179,6 @@ func PostStoryToStackerNews(story *Story) {
 	CommentStackerNewsPost(comment, parentId)
 
 	log.Printf("Commented post on SN: parentId=%d text='%s'\n", parentId, comment)
-
 }
 
 func CommentStackerNewsPost(text string, parentId int) {
