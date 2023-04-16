@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+
+	"github.com/joho/godotenv"
+	"github.com/namsral/flag"
 )
 
 type GraphQLPayload struct {
@@ -23,6 +26,22 @@ type DupesResponse struct {
 	Data struct {
 		Dupes []Dupe `json:"dupes"`
 	} `json:"data"`
+}
+
+var (
+	SnApiToken string
+)
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	flag.StringVar(&SnApiToken, "NEXT_AUTH_CSRF_TOKEN", "", "Token required for authorizing requests to stacker.news/api/graphql")
+	flag.Parse()
+	if SnApiToken == "" {
+		log.Fatal("NEXT_AUTH_CSRF_TOKEN not set")
+	}
 }
 
 func makeGraphQLRequest(body GraphQLPayload) *http.Response {
