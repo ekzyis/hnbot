@@ -25,6 +25,31 @@ type DupesResponse struct {
 	} `json:"data"`
 }
 
+func makeGraphQLRequest(body GraphQLPayload) *http.Response {
+	bodyJSON, err := json.Marshal(body)
+	if err != nil {
+		log.Fatal("Error during json.Marshal:", err)
+	}
+
+	url := "https://stacker.news/api/graphql"
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyJSON))
+	if err != nil {
+		panic(err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", fmt.Sprintf("__Host-next-auth.csrf-token=%s", SnApiToken))
+
+	client := http.DefaultClient
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Printf("POST %s %d\n", url, resp.StatusCode)
+
+	return resp
+}
+
 func filterByRelevanceForSN(stories *[]Story) *[]Story {
 	// TODO: filter by relevance
 
@@ -46,29 +71,11 @@ func fetchDupes(url string) *[]Dupe {
 			"url": url,
 		},
 	}
-
-	bodyJSON, err := json.Marshal(body)
-	if err != nil {
-		log.Fatal("Error during json.Marshal:", err)
-	}
-
-	apiUrl := "https://stacker.news/api/graphql"
-	req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer(bodyJSON))
-	if err != nil {
-		panic(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", fmt.Sprintf("__Host-next-auth.csrf-token=%s", SnApiToken))
-
-	client := http.DefaultClient
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
+	resp := makeGraphQLRequest(body)
 	defer resp.Body.Close()
 
 	var dupesResp DupesResponse
-	err = json.NewDecoder(resp.Body).Decode(&dupesResp)
+	err := json.NewDecoder(resp.Body).Decode(&dupesResp)
 	if err != nil {
 		log.Fatal("Error decoding dupes JSON:", err)
 	}
@@ -95,26 +102,6 @@ func postToSN(story *Story) {
 			"title": story.Title,
 		},
 	}
-
-	bodyJSON, err := json.Marshal(body)
-	if err != nil {
-		log.Fatal("Error during json.Marshal:", err)
-	}
-
-	apiUrl := "https://stacker.news/api/graphql"
-	req, err := http.NewRequest("POST", apiUrl, bytes.NewBuffer(bodyJSON))
-	if err != nil {
-		panic(err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", fmt.Sprintf("__Host-next-auth.csrf-token=%s", SnApiToken))
-
-	client := http.DefaultClient
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
+	resp := makeGraphQLRequest(body)
 	defer resp.Body.Close()
-
-	log.Printf("POST %s %d\n", apiUrl, resp.StatusCode)
 }
