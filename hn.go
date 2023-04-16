@@ -20,10 +20,20 @@ type Story struct {
 	Url         string
 }
 
+var (
+	HackerNewsUrl         string
+	HackerNewsFirebaseUrl string
+)
+
+func init() {
+	HackerNewsUrl = "https://news.ycombinator.com"
+	HackerNewsFirebaseUrl = "https://hacker-news.firebaseio.com/v0"
+}
+
 func fetchTopStoriesFromHN() []Story {
 	// API docs: https://github.com/HackerNews/API
 
-	url := "https://hacker-news.firebaseio.com/v0/topstories.json"
+	url := fmt.Sprintf("%s/topstories.json", HackerNewsFirebaseUrl)
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatal("Error fetching top stories:", err)

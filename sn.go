@@ -29,10 +29,12 @@ type DupesResponse struct {
 }
 
 var (
+	SnApiUrl   string
 	SnApiToken string
 )
 
 func init() {
+	SnApiUrl = "https://stacker.news/api/graphql"
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -50,8 +52,7 @@ func makeGraphQLRequest(body GraphQLPayload) *http.Response {
 		log.Fatal("Error during json.Marshal:", err)
 	}
 
-	url := "https://stacker.news/api/graphql"
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bodyJSON))
+	req, err := http.NewRequest("POST", SnApiUrl, bytes.NewBuffer(bodyJSON))
 	if err != nil {
 		panic(err)
 	}
@@ -64,7 +65,7 @@ func makeGraphQLRequest(body GraphQLPayload) *http.Response {
 		panic(err)
 	}
 
-	log.Printf("POST %s %d\n", url, resp.StatusCode)
+	log.Printf("POST %s %d\n", SnApiUrl, resp.StatusCode)
 
 	return resp
 }
