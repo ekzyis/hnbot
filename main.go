@@ -1,9 +1,9 @@
 package main
 
 func main() {
-	stories := fetchTopStoriesFromHN()
-	filtered := filterByRelevanceForSN(&stories)
+	stories := FetchHackerNewsTopStories()
+	filtered := CurateContentForStackerNews(&stories)
 	for _, story := range *filtered {
-		postToSN(&story)
+		PostStoryToStackerNews(&story)
 	}
 }

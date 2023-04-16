@@ -30,7 +30,7 @@ func init() {
 	HackerNewsFirebaseUrl = "https://hacker-news.firebaseio.com/v0"
 }
 
-func fetchTopStoriesFromHN() []Story {
+func FetchHackerNewsTopStories() []Story {
 	// API docs: https://github.com/HackerNews/API
 
 	url := fmt.Sprintf("%s/topstories.json", HackerNewsFirebaseUrl)
@@ -53,7 +53,7 @@ func fetchTopStoriesFromHN() []Story {
 
 	var stories [limit]Story
 	for i, id := range ids {
-		story := fetchStoryByID(id)
+		story := FetchStoryById(id)
 		stories[i] = story
 	}
 
@@ -61,7 +61,7 @@ func fetchTopStoriesFromHN() []Story {
 	return stories[:]
 }
 
-func fetchStoryByID(id ItemID) Story {
+func FetchStoryById(id ItemID) Story {
 	url := fmt.Sprintf("https://hacker-news.firebaseio.com/v0/item/%d.json", id)
 	resp, err := http.Get(url)
 	if err != nil {

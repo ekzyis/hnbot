@@ -46,7 +46,7 @@ func init() {
 	}
 }
 
-func makeGraphQLRequest(body GraphQLPayload) *http.Response {
+func MakeStackerNewsRequest(body GraphQLPayload) *http.Response {
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {
 		log.Fatal("Error during json.Marshal:", err)
@@ -70,14 +70,14 @@ func makeGraphQLRequest(body GraphQLPayload) *http.Response {
 	return resp
 }
 
-func filterByRelevanceForSN(stories *[]Story) *[]Story {
+func CurateContentForStackerNews(stories *[]Story) *[]Story {
 	// TODO: filter by relevance
 
 	slice := (*stories)[0:1]
 	return &slice
 }
 
-func fetchDupes(url string) *[]Dupe {
+func FetchStackerNewsDupes(url string) *[]Dupe {
 	body := GraphQLPayload{
 		Query: `
 			query Dupes($url: String!) {
@@ -91,7 +91,7 @@ func fetchDupes(url string) *[]Dupe {
 			"url": url,
 		},
 	}
-	resp := makeGraphQLRequest(body)
+	resp := MakeStackerNewsRequest(body)
 	defer resp.Body.Close()
 
 	var dupesResp DupesResponse
@@ -103,8 +103,8 @@ func fetchDupes(url string) *[]Dupe {
 	return &dupesResp.Data.Dupes
 }
 
-func postToSN(story *Story) {
-	dupes := fetchDupes(story.Url)
+func PostStoryToStackerNews(story *Story) {
+	dupes := FetchStackerNewsDupes(story.Url)
 	if len(*dupes) > 0 {
 		return
 	}
@@ -122,6 +122,6 @@ func postToSN(story *Story) {
 			"title": story.Title,
 		},
 	}
-	resp := makeGraphQLRequest(body)
+	resp := MakeStackerNewsRequest(body)
 	defer resp.Body.Close()
 }

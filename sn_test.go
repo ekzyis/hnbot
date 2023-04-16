@@ -9,6 +9,6 @@ import (
 func TestFetchDupes(t *testing.T) {
 	// TODO: mock HTTP request
 	url := "https://en.wikipedia.org/wiki/Dishwasher_salmon"
-	dupes := fetchDupes(url)
+	dupes := FetchStackerNewsDupes(url)
 	assert.NotEmpty(t, *dupes, "Expected at least one duplicate")
 }
