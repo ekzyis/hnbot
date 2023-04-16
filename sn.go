@@ -41,8 +41,8 @@ type UpsertLinkResponse struct {
 }
 
 var (
-	SnApiUrl   string
-	SnApiToken string
+	SnApiUrl     string
+	SnAuthCookie string
 )
 
 func init() {
@@ -51,10 +51,10 @@ func init() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	flag.StringVar(&SnApiToken, "NEXT_AUTH_CSRF_TOKEN", "", "Token required for authorizing requests to stacker.news/api/graphql")
+	flag.StringVar(&SnAuthCookie, "AUTH_COOKIE", "", "Cookie required for authorizing requests to stacker.news/api/graphql")
 	flag.Parse()
-	if SnApiToken == "" {
-		log.Fatal("NEXT_AUTH_CSRF_TOKEN not set")
+	if SnAuthCookie == "" {
+		log.Fatal("AUTH_COOKIE not set")
 	}
 }
 
@@ -69,7 +69,7 @@ func MakeStackerNewsRequest(body GraphQLPayload) *http.Response {
 		panic(err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Cookie", fmt.Sprintf("__Host-next-auth.csrf-token=%s", SnApiToken))
+	req.Header.Set("Cookie", SnAuthCookie)
 
 	client := http.DefaultClient
 	resp, err := client.Do(req)
