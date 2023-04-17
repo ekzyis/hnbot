@@ -170,7 +170,8 @@ func PostStoryToStackerNews(story *Story) {
 	}
 	parentId := upsertLinkResp.Data.UpsertLink.Id
 
-	log.Printf("Created new post on SN: id=%d url=%s\n", parentId, story.Url)
+	log.Println("Created new post on SN")
+	log.Printf("id=%d title='%s' url=%s\n", parentId, story.Title, story.Url)
 
 	comment := fmt.Sprintf(
 		"This link was posted by [%s](%s) %s on [HN](%s). It received %d points and %d comments.",
@@ -181,8 +182,6 @@ func PostStoryToStackerNews(story *Story) {
 		story.Score, story.Descendants,
 	)
 	CommentStackerNewsPost(comment, parentId)
-
-	log.Printf("Commented post on SN: parentId=%d text='%s'\n", parentId, comment)
 }
 
 func CommentStackerNewsPost(text string, parentId int) {
@@ -200,6 +199,9 @@ func CommentStackerNewsPost(text string, parentId int) {
 	}
 	resp := MakeStackerNewsRequest(body)
 	defer resp.Body.Close()
+
+	log.Println("Commented post on SN")
+	log.Printf("text='%s' parentId=%d\n", text, parentId)
 }
 
 func FetchStackerNewsUserItems(user string) *[]Item {
