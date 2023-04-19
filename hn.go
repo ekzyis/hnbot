@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
+	"strconv"
 )
 
 type ItemID = int
@@ -23,11 +26,13 @@ type Story struct {
 var (
 	HackerNewsUrl         string
 	HackerNewsFirebaseUrl string
+	HackerNewsLinkRegexp  *regexp.Regexp
 )
 
 func init() {
 	HackerNewsUrl = "https://news.ycombinator.com"
 	HackerNewsFirebaseUrl = "https://hacker-news.firebaseio.com/v0"
+	HackerNewsLinkRegexp = regexp.MustCompile(`(?:https?:\/\/)?news\.ycombinator\.com\/item\?id=([0-9]+)`)
 }
 
 func FetchHackerNewsTopStories() []Story {
@@ -77,6 +82,19 @@ func FetchStoryById(id ItemID) Story {
 	}
 
 	return story
+}
+
+func ParseHackerNewsLink(link string) (ItemID, error) {
+	match := HackerNewsLinkRegexp.FindStringSubmatch(link)
+	if len(match) == 0 {
+		return -1, errors.New("input is not a hacker news link")
+	}
+	id, err := strconv.Atoi(match[1])
+	if err != nil {
+		// this should never happen
+		panic(err)
+	}
+	return id, nil
 }
 
 func HackerNewsUserLink(user string) string {
