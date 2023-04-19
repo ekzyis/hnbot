@@ -172,6 +172,7 @@ func PostStoryToStackerNews(story *Story) {
 
 	log.Println("Created new post on SN")
 	log.Printf("id=%d title='%s' url=%s\n", parentId, story.Title, story.Url)
+	SendStackerNewsEmbedToDiscord(story.Title, parentId)
 
 	comment := fmt.Sprintf(
 		"This link was posted by [%s](%s) %s on [HN](%s). It received %d points and %d comments.",
@@ -182,6 +183,10 @@ func PostStoryToStackerNews(story *Story) {
 		story.Score, story.Descendants,
 	)
 	CommentStackerNewsPost(comment, parentId)
+}
+
+func StackerNewsItemLink(id int) string {
+	return fmt.Sprintf("https://stacker.news/items/%d", id)
 }
 
 func CommentStackerNewsPost(text string, parentId int) {
@@ -202,4 +207,21 @@ func CommentStackerNewsPost(text string, parentId int) {
 
 	log.Println("Commented post on SN")
 	log.Printf("text='%s' parentId=%d\n", text, parentId)
+}
+
+func SendStackerNewsEmbedToDiscord(title string, id int) {
+	Timestamp := time.Now().Format(time.RFC3339)
+	url := StackerNewsItemLink(id)
+	color := 0xffc107
+	embed := DiscordEmbed{
+		Title: title,
+		Url:   url,
+		Color: color,
+		Footer: DiscordEmbedFooter{
+			Text:    "Stacker News",
+			IconUrl: "https://stacker.news/favicon.png",
+		},
+		Timestamp: Timestamp,
+	}
+	SendEmbedToDiscord(embed)
 }
