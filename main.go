@@ -1,9 +1,14 @@
 package main
 
+import "time"
+
 func main() {
-	stories := FetchHackerNewsTopStories()
-	filtered := CurateContentForStackerNews(&stories)
-	for _, story := range *filtered {
-		PostStoryToStackerNews(&story)
+	for {
+		stories := FetchHackerNewsTopStories()
+		filtered := CurateContentForStackerNews(&stories)
+		for _, story := range *filtered {
+			PostStoryToStackerNews(&story)
+		}
+		time.Sleep(time.Hour)
 	}
 }
