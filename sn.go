@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/dustin/go-humanize"
 	"github.com/joho/godotenv"
 	"github.com/namsral/flag"
@@ -236,15 +237,15 @@ func SendStackerNewsEmbedToDiscord(title string, id int) {
 	Timestamp := time.Now().Format(time.RFC3339)
 	url := StackerNewsItemLink(id)
 	color := 0xffc107
-	embed := DiscordEmbed{
+	embed := discordgo.MessageEmbed{
 		Title: title,
-		Url:   url,
+		URL:   url,
 		Color: color,
-		Footer: DiscordEmbedFooter{
+		Footer: &discordgo.MessageEmbedFooter{
 			Text:    "Stacker News",
-			IconUrl: "https://stacker.news/favicon.png",
+			IconURL: "https://stacker.news/favicon.png",
 		},
 		Timestamp: Timestamp,
 	}
-	SendEmbedToDiscord(embed)
+	SendEmbedToDiscord(&embed)
 }
