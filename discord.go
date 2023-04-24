@@ -3,10 +3,13 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/dustin/go-humanize"
 	"github.com/joho/godotenv"
 	"github.com/namsral/flag"
 )
@@ -22,12 +25,19 @@ type DiscordEmbedFooter struct {
 	IconUrl string `json:"icon_url"`
 }
 
+type DiscordEmbedField struct {
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+	Inline bool   `json:"inline"`
+}
+
 type DiscordEmbed struct {
-	Title     string             `json:"title"`
-	Url       string             `json:"url"`
-	Color     int                `json:"color"`
-	Footer    DiscordEmbedFooter `json:"footer"`
-	Timestamp string             `json:"timestamp"`
+	Title     string              `json:"title"`
+	Url       string              `json:"url"`
+	Color     int                 `json:"color"`
+	Footer    DiscordEmbedFooter  `json:"footer"`
+	Timestamp string              `json:"timestamp"`
+	Fields    []DiscordEmbedField `json:"fields"`
 }
 
 type DiscordWebhookPayload struct {
@@ -78,7 +88,66 @@ func onMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	story := FetchStoryById(id)
-	PostStoryToStackerNews(&story)
+	id, err = PostStoryToStackerNews(&story)
+	if err != nil {
+		var dupesErr *DupesError
+		if errors.As(err, &dupesErr) {
+			SendDupesErrorToDiscord(dupesErr)
+		} else {
+			log.Fatal("unexpected error returned")
+		}
+	}
+}
+
+func SendDupesErrorToDiscord(dupesErr *DupesError) {
+	title := fmt.Sprintf("%d dupe(s) found for %s:", len(dupesErr.Dupes), dupesErr.Url)
+	color := 0xffc107
+	var fields []DiscordEmbedField
+	for _, dupe := range dupesErr.Dupes {
+		fields = append(fields,
+			DiscordEmbedField{
+				Name:   "Title",
+				Value:  dupe.Title,
+				Inline: false,
+			},
+			DiscordEmbedField{
+				Name:   "Id",
+				Value:  StackerNewsItemLink(dupe.Id),
+				Inline: true,
+			},
+			DiscordEmbedField{
+				Name:   "Url",
+				Value:  dupe.Url,
+				Inline: true,
+			},
+			DiscordEmbedField{
+				Name:   "User",
+				Value:  dupe.User.Name,
+				Inline: true,
+			},
+			DiscordEmbedField{
+				Name:   "Created",
+				Value:  humanize.Time(dupe.CreatedAt),
+				Inline: true,
+			},
+			DiscordEmbedField{
+				Name:   "Sats",
+				Value:  fmt.Sprint(dupe.Sats),
+				Inline: true,
+			},
+			DiscordEmbedField{
+				Name:   "Comments",
+				Value:  fmt.Sprint(dupe.NComments),
+				Inline: true,
+			},
+		)
+	}
+	embed := DiscordEmbed{
+		Title:  title,
+		Color:  color,
+		Fields: fields,
+	}
+	SendEmbedToDiscord(embed)
 }
 
 func SendEmbedToDiscord(embed DiscordEmbed) {
