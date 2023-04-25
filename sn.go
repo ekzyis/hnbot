@@ -80,14 +80,12 @@ type ItemsResponse struct {
 }
 
 var (
-	StackerNewsUrl string
-	SnApiUrl       string
+	StackerNewsUrl = "https://stacker.news"
+	SnApiUrl       = "https://stacker.news/api/graphql"
 	SnAuthCookie   string
 )
 
 func init() {
-	StackerNewsUrl = "https://stacker.news"
-	SnApiUrl = "https://stacker.news/api/graphql"
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")

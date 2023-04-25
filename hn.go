@@ -22,16 +22,10 @@ type Story struct {
 }
 
 var (
-	HackerNewsUrl         string
-	HackerNewsFirebaseUrl string
-	HackerNewsLinkRegexp  *regexp.Regexp
-)
-
-func init() {
-	HackerNewsUrl = "https://news.ycombinator.com"
+	HackerNewsUrl         = "https://news.ycombinator.com"
 	HackerNewsFirebaseUrl = "https://hacker-news.firebaseio.com/v0"
-	HackerNewsLinkRegexp = regexp.MustCompile(`(?:https?:\/\/)?news\.ycombinator\.com\/item\?id=([0-9]+)`)
-}
+	HackerNewsLinkRegexp  = regexp.MustCompile(`(?:https?:\/\/)?news\.ycombinator\.com\/item\?id=([0-9]+)`)
+)
 
 func FetchHackerNewsTopStories() []Story {
 	// API docs: https://github.com/HackerNews/API
