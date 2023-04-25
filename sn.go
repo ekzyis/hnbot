@@ -19,14 +19,15 @@ type GraphQLPayload struct {
 	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
-type SnUser struct {
+type User struct {
 	Name string `json:"name"`
 }
+
 type Dupe struct {
 	Id        int       `json:"id,string"`
 	Url       string    `json:"url"`
 	Title     string    `json:"title"`
-	User      SnUser    `json:"user"`
+	User      User      `json:"user"`
 	CreatedAt time.Time `json:"createdAt"`
 	Sats      int       `json:"sats"`
 	NComments int       `json:"ncomments"`
@@ -47,9 +48,6 @@ func (e *DupesError) Error() string {
 	return fmt.Sprintf("%s has %d dupes", e.Url, len(e.Dupes))
 }
 
-type User struct {
-	Name string `json:"name"`
-}
 type Comment struct {
 	Id       int       `json:"id,string"`
 	Text     string    `json:"text"`
