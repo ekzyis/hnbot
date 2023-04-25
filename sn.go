@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/dustin/go-humanize"
 	"github.com/joho/godotenv"
 	"github.com/namsral/flag"
@@ -18,16 +19,32 @@ type GraphQLPayload struct {
 	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
+type SnUser struct {
+	Name string `json:"name"`
+}
 type Dupe struct {
-	Id    int    `json:"id,string"`
-	Url   string `json:"url"`
-	Title string `json:"title"`
+	Id        int       `json:"id,string"`
+	Url       string    `json:"url"`
+	Title     string    `json:"title"`
+	User      SnUser    `json:"user"`
+	CreatedAt time.Time `json:"createdAt"`
+	Sats      int       `json:"sats"`
+	NComments int       `json:"ncomments"`
 }
 
 type DupesResponse struct {
 	Data struct {
 		Dupes []Dupe `json:"dupes"`
 	} `json:"data"`
+}
+
+type DupesError struct {
+	Url   string
+	Dupes []Dupe
+}
+
+func (e *DupesError) Error() string {
+	return fmt.Sprintf("%s has %d dupes", e.Url, len(e.Dupes))
 }
 
 type User struct {
@@ -123,6 +140,12 @@ func FetchStackerNewsDupes(url string) *[]Dupe {
 					id
 					url
 					title
+					user {
+						name
+					}
+					createdAt
+					sats
+					ncomments
 				}
 			}`,
 		Variables: map[string]interface{}{
@@ -141,11 +164,17 @@ func FetchStackerNewsDupes(url string) *[]Dupe {
 	return &dupesResp.Data.Dupes
 }
 
-func PostStoryToStackerNews(story *Story) {
-	dupes := FetchStackerNewsDupes(story.Url)
-	if len(*dupes) > 0 {
-		log.Printf("%s was already posted. Skipping.\n", story.Url)
-		return
+type PostStoryOptions struct {
+	SkipDupes bool
+}
+
+func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error) {
+	if !options.SkipDupes {
+		dupes := FetchStackerNewsDupes(story.Url)
+		if len(*dupes) > 0 {
+			log.Printf("%s was already posted. Skipping.\n", story.Url)
+			return -1, &DupesError{story.Url, *dupes}
+		}
 	}
 
 	body := GraphQLPayload{
@@ -183,6 +212,7 @@ func PostStoryToStackerNews(story *Story) {
 		story.Score, story.Descendants,
 	)
 	CommentStackerNewsPost(comment, parentId)
+	return parentId, nil
 }
 
 func StackerNewsItemLink(id int) string {
@@ -213,15 +243,15 @@ func SendStackerNewsEmbedToDiscord(title string, id int) {
 	Timestamp := time.Now().Format(time.RFC3339)
 	url := StackerNewsItemLink(id)
 	color := 0xffc107
-	embed := DiscordEmbed{
+	embed := discordgo.MessageEmbed{
 		Title: title,
-		Url:   url,
+		URL:   url,
 		Color: color,
-		Footer: DiscordEmbedFooter{
+		Footer: &discordgo.MessageEmbedFooter{
 			Text:    "Stacker News",
-			IconUrl: "https://stacker.news/favicon.png",
+			IconURL: "https://stacker.news/favicon.png",
 		},
 		Timestamp: Timestamp,
 	}
-	SendEmbedToDiscord(embed)
+	SendEmbedToDiscord(&embed)
 }
