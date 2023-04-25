@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +10,9 @@ import (
 func TestFetchDupes(t *testing.T) {
 	// TODO: mock HTTP request
 	url := "https://en.wikipedia.org/wiki/Dishwasher_salmon"
-	dupes := FetchStackerNewsDupes(url)
+	dupes, err := FetchStackerNewsDupes(url)
+	if err != nil {
+		log.Fatal(err)
+	}
 	assert.NotEmpty(t, *dupes, "Expected at least one duplicate")
 }

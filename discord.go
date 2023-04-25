@@ -54,7 +54,6 @@ func initBot() {
 }
 
 func onMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// Ignore all messages created by the bot itself
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
@@ -62,15 +61,15 @@ func onMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if err != nil {
 		return
 	}
-	story := FetchStoryById(hackerNewsId)
+	story, err := FetchStoryById(hackerNewsId)
 	_, err = PostStoryToStackerNews(&story, PostStoryOptions{SkipDupes: false})
 	if err != nil {
 		var dupesErr *DupesError
 		if errors.As(err, &dupesErr) {
 			SendDupesErrorToDiscord(hackerNewsId, dupesErr)
-		} else {
-			log.Fatal("unexpected error returned")
+			return
 		}
+		SendErrorToDiscord(err)
 	}
 }
 
@@ -83,7 +82,7 @@ func onMessageReact(s *discordgo.Session, reaction *discordgo.MessageReactionAdd
 	}
 	m, err := s.ChannelMessage(reaction.ChannelID, reaction.MessageID)
 	if err != nil {
-		log.Println("error:", err)
+		SendErrorToDiscord(err)
 		return
 	}
 	if len(m.Embeds) == 0 {
@@ -97,14 +96,21 @@ func onMessageReact(s *discordgo.Session, reaction *discordgo.MessageReactionAdd
 	if err != nil {
 		return
 	}
-	story := FetchStoryById(id)
+	story, err := FetchStoryById(id)
+	if err != nil {
+		SendErrorToDiscord(err)
+		return
+	}
 	id, err = PostStoryToStackerNews(&story, PostStoryOptions{SkipDupes: true})
 	if err != nil {
-		log.Fatal("unexpected error returned")
+		SendErrorToDiscord(err)
 	}
 }
 
 func SendDupesErrorToDiscord(hackerNewsId int, dupesErr *DupesError) {
+	msg := fmt.Sprint(dupesErr)
+	log.Println(msg)
+
 	title := fmt.Sprintf("%d dupe(s) found for %s:", len(dupesErr.Dupes), dupesErr.Url)
 	color := 0xffc107
 	var fields []*discordgo.MessageEmbedField
@@ -147,6 +153,7 @@ func SendDupesErrorToDiscord(hackerNewsId int, dupesErr *DupesError) {
 			},
 		)
 	}
+
 	embed := discordgo.MessageEmbed{
 		Title:  title,
 		Color:  color,
@@ -162,6 +169,19 @@ func SendDupesErrorToDiscord(hackerNewsId int, dupesErr *DupesError) {
 func SendEmbedToDiscord(embed *discordgo.MessageEmbed) {
 	_, err := dg.ChannelMessageSendEmbed(DiscordChannelId, embed)
 	if err != nil {
-		log.Fatal("Error during json.Marshal:", err)
+		err = fmt.Errorf("error during sending embed: %w", err)
+		log.Println(err)
 	}
+}
+
+func SendErrorToDiscord(err error) {
+	msg := fmt.Sprint(err)
+	log.Println(msg)
+
+	embed := discordgo.MessageEmbed{
+		Title:       "Error",
+		Color:       0xff0000,
+		Description: msg,
+	}
+	SendEmbedToDiscord(&embed)
 }

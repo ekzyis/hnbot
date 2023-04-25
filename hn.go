@@ -27,21 +27,23 @@ var (
 	HackerNewsLinkRegexp  = regexp.MustCompile(`(?:https?:\/\/)?news\.ycombinator\.com\/item\?id=([0-9]+)`)
 )
 
-func FetchHackerNewsTopStories() []Story {
-	// API docs: https://github.com/HackerNews/API
+func FetchHackerNewsTopStories() ([]Story, error) {
+	log.Println("Fetching HN top stories ...")
 
+	// API docs: https://github.com/HackerNews/API
 	url := fmt.Sprintf("%s/topstories.json", HackerNewsFirebaseUrl)
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatal("Error fetching top stories:", err)
+		err = fmt.Errorf("error fetching HN top stories %w:", err)
+		return nil, err
 	}
 	defer resp.Body.Close()
-	log.Printf("GET %s %d\n", url, resp.StatusCode)
 
 	var ids []int
 	err = json.NewDecoder(resp.Body).Decode(&ids)
 	if err != nil {
-		log.Fatal("Error decoding top stories JSON:", err)
+		err = fmt.Errorf("error decoding HN top stories JSON: %w", err)
+		return nil, err
 	}
 
 	// we are only interested in the first page of top stories
@@ -50,30 +52,38 @@ func FetchHackerNewsTopStories() []Story {
 
 	var stories [limit]Story
 	for i, id := range ids {
-		story := FetchStoryById(id)
+		story, err := FetchStoryById(id)
+		if err != nil {
+			return nil, err
+		}
 		stories[i] = story
 	}
 
+	log.Println("Fetching HN top stories ... OK")
 	// Can't return [30]Story as []Story so we copy the array
-	return stories[:]
+	return stories[:], nil
 }
 
-func FetchStoryById(id int) Story {
+func FetchStoryById(id int) (Story, error) {
+	log.Printf("Fetching HN story (id=%d) ...\n", id)
+
 	url := fmt.Sprintf("https://hacker-news.firebaseio.com/v0/item/%d.json", id)
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatal("Error fetching story:", err)
+		err = fmt.Errorf("error fetching HN story (id=%d): %w", id, err)
+		return Story{}, err
 	}
 	defer resp.Body.Close()
-	log.Printf("GET %s %d\n", url, resp.StatusCode)
 
 	var story Story
 	err = json.NewDecoder(resp.Body).Decode(&story)
 	if err != nil {
-		log.Fatal("Error decoding story JSON:", err)
+		err := fmt.Errorf("error decoding HN story JSON (id=%d): %w", id, err)
+		return Story{}, err
 	}
 
-	return story
+	log.Printf("Fetching HN story (id=%d) ... OK\n", id)
+	return story, nil
 }
 
 func ParseHackerNewsLink(link string) (int, error) {
@@ -83,8 +93,7 @@ func ParseHackerNewsLink(link string) (int, error) {
 	}
 	id, err := strconv.Atoi(match[1])
 	if err != nil {
-		// this should never happen
-		panic(err)
+		return -1, errors.New("integer conversion to string failed")
 	}
 	return id, nil
 }

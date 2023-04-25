@@ -45,7 +45,7 @@ type DupesError struct {
 }
 
 func (e *DupesError) Error() string {
-	return fmt.Sprintf("%s has %d dupes", e.Url, len(e.Dupes))
+	return fmt.Sprintf("found %d dupes for %s", len(e.Dupes), e.Url)
 }
 
 type Comment struct {
@@ -88,7 +88,7 @@ var (
 func init() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal("error loading .env file")
 	}
 	flag.StringVar(&SnAuthCookie, "SN_AUTH_COOKIE", "", "Cookie required for authorizing requests to stacker.news/api/graphql")
 	flag.Parse()
@@ -97,15 +97,17 @@ func init() {
 	}
 }
 
-func MakeStackerNewsRequest(body GraphQLPayload) *http.Response {
+func MakeStackerNewsRequest(body GraphQLPayload) (*http.Response, error) {
 	bodyJSON, err := json.Marshal(body)
 	if err != nil {
-		log.Fatal("Error during json.Marshal:", err)
+		err = fmt.Errorf("error encoding SN payload: %w", err)
+		return nil, err
 	}
 
 	req, err := http.NewRequest("POST", SnApiUrl, bytes.NewBuffer(bodyJSON))
 	if err != nil {
-		panic(err)
+		err = fmt.Errorf("error preparing SN request: %w", err)
+		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Cookie", SnAuthCookie)
@@ -113,12 +115,11 @@ func MakeStackerNewsRequest(body GraphQLPayload) *http.Response {
 	client := http.DefaultClient
 	resp, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		err = fmt.Errorf("error posting SN payload: %w", err)
+		return nil, err
 	}
 
-	log.Printf("POST %s %d\n", SnApiUrl, resp.StatusCode)
-
-	return resp
+	return resp, nil
 }
 
 func CurateContentForStackerNews(stories *[]Story) *[]Story {
@@ -128,7 +129,9 @@ func CurateContentForStackerNews(stories *[]Story) *[]Story {
 	return &slice
 }
 
-func FetchStackerNewsDupes(url string) *[]Dupe {
+func FetchStackerNewsDupes(url string) (*[]Dupe, error) {
+	log.Printf("Fetching SN dupes (url=%s) ...\n", url)
+
 	body := GraphQLPayload{
 		Query: `
 			query Dupes($url: String!) {
@@ -148,16 +151,21 @@ func FetchStackerNewsDupes(url string) *[]Dupe {
 			"url": url,
 		},
 	}
-	resp := MakeStackerNewsRequest(body)
+	resp, err := MakeStackerNewsRequest(body)
+	if err != nil {
+		return nil, err
+	}
 	defer resp.Body.Close()
 
 	var dupesResp DupesResponse
-	err := json.NewDecoder(resp.Body).Decode(&dupesResp)
+	err = json.NewDecoder(resp.Body).Decode(&dupesResp)
 	if err != nil {
-		log.Fatal("Error decoding dupes JSON:", err)
+		err = fmt.Errorf("error decoding SN dupes: %w", err)
+		return nil, err
 	}
 
-	return &dupesResp.Data.Dupes
+	log.Printf("Fetching SN dupes (url=%s) ... OK\n", url)
+	return &dupesResp.Data.Dupes, nil
 }
 
 type PostStoryOptions struct {
@@ -165,10 +173,14 @@ type PostStoryOptions struct {
 }
 
 func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error) {
+	log.Printf("Posting to SN (url=%s) ...\n", story.Url)
+
 	if !options.SkipDupes {
-		dupes := FetchStackerNewsDupes(story.Url)
+		dupes, err := FetchStackerNewsDupes(story.Url)
+		if err != nil {
+			return -1, err
+		}
 		if len(*dupes) > 0 {
-			log.Printf("%s was already posted. Skipping.\n", story.Url)
 			return -1, &DupesError{story.Url, *dupes}
 		}
 	}
@@ -185,18 +197,21 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 			"title": story.Title,
 		},
 	}
-	resp := MakeStackerNewsRequest(body)
+	resp, err := MakeStackerNewsRequest(body)
+	if err != nil {
+		return -1, err
+	}
 	defer resp.Body.Close()
 
 	var upsertLinkResp UpsertLinkResponse
-	err := json.NewDecoder(resp.Body).Decode(&upsertLinkResp)
+	err = json.NewDecoder(resp.Body).Decode(&upsertLinkResp)
 	if err != nil {
-		log.Fatal("Error decoding dupes JSON:", err)
+		err = fmt.Errorf("error decoding SN upsertLink: %w", err)
+		return -1, err
 	}
 	parentId := upsertLinkResp.Data.UpsertLink.Id
 
-	log.Println("Created new post on SN")
-	log.Printf("id=%d title='%s' url=%s\n", parentId, story.Title, story.Url)
+	log.Printf("Posting to SN (url=%s) ... OK \n", story.Url)
 	SendStackerNewsEmbedToDiscord(story.Title, parentId)
 
 	comment := fmt.Sprintf(
@@ -215,7 +230,9 @@ func StackerNewsItemLink(id int) string {
 	return fmt.Sprintf("https://stacker.news/items/%d", id)
 }
 
-func CommentStackerNewsPost(text string, parentId int) {
+func CommentStackerNewsPost(text string, parentId int) (*http.Response, error) {
+	log.Printf("Commenting SN post (parentId=%d) ...\n", parentId)
+
 	body := GraphQLPayload{
 		Query: `
 			mutation createComment($text: String!, $parentId: ID!) {
@@ -228,11 +245,14 @@ func CommentStackerNewsPost(text string, parentId int) {
 			"parentId": parentId,
 		},
 	}
-	resp := MakeStackerNewsRequest(body)
+	resp, err := MakeStackerNewsRequest(body)
+	if err != nil {
+		return nil, err
+	}
 	defer resp.Body.Close()
 
-	log.Println("Commented post on SN")
-	log.Printf("text='%s' parentId=%d\n", text, parentId)
+	log.Printf("Commenting SN post (parentId=%d) ... OK\n", parentId)
+	return resp, nil
 }
 
 func SendStackerNewsEmbedToDiscord(title string, id int) {
