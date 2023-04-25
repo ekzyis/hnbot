@@ -10,14 +10,12 @@ import (
 	"strconv"
 )
 
-type ItemID = int
-
 type Story struct {
-	ID          ItemID
+	ID          int
 	By          string // username of author
 	Time        int    // UNIX timestamp
 	Descendants int    // number of comments
-	Kids        []ItemID
+	Kids        []int
 	Score       int
 	Title       string
 	Url         string
@@ -66,7 +64,7 @@ func FetchHackerNewsTopStories() []Story {
 	return stories[:]
 }
 
-func FetchStoryById(id ItemID) Story {
+func FetchStoryById(id int) Story {
 	url := fmt.Sprintf("https://hacker-news.firebaseio.com/v0/item/%d.json", id)
 	resp, err := http.Get(url)
 	if err != nil {
@@ -84,7 +82,7 @@ func FetchStoryById(id ItemID) Story {
 	return story
 }
 
-func ParseHackerNewsLink(link string) (ItemID, error) {
+func ParseHackerNewsLink(link string) (int, error) {
 	match := HackerNewsLinkRegexp.FindStringSubmatch(link)
 	if len(match) == 0 {
 		return -1, errors.New("input is not a hacker news link")
