@@ -13,7 +13,7 @@ import (
 
 var (
 	DiscordToken     string
-	DiscordClient    *discordgo.Session
+	dg               *discordgo.Session
 	DiscordChannelId string
 )
 
@@ -36,16 +36,16 @@ func init() {
 
 func initBot() {
 	var err error
-	DiscordClient, err = discordgo.New("Bot " + DiscordToken)
+	dg, err = discordgo.New("Bot " + DiscordToken)
 	if err != nil {
 		log.Fatal("error creating discord session:", err)
 	}
-	DiscordClient.AddHandler(func(s *discordgo.Session, event *discordgo.Ready) {
+	dg.AddHandler(func(s *discordgo.Session, event *discordgo.Ready) {
 		log.Println("Logged in as", event.User.Username)
 	})
-	DiscordClient.AddHandler(onMessage)
-	DiscordClient.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent
-	err = DiscordClient.Open()
+	dg.AddHandler(onMessage)
+	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent
+	err = dg.Open()
 	if err != nil {
 		log.Fatal("error opening connection to discord: ", err, " -- Is your token correct?")
 	}
@@ -124,7 +124,7 @@ func SendDupesErrorToDiscord(dupesErr *DupesError) {
 }
 
 func SendEmbedToDiscord(embed *discordgo.MessageEmbed) {
-	_, err := DiscordClient.ChannelMessageSendEmbed(DiscordChannelId, embed)
+	_, err := dg.ChannelMessageSendEmbed(DiscordChannelId, embed)
 	if err != nil {
 		log.Fatal("Error during json.Marshal:", err)
 	}
