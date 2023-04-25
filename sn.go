@@ -164,11 +164,17 @@ func FetchStackerNewsDupes(url string) *[]Dupe {
 	return &dupesResp.Data.Dupes
 }
 
-func PostStoryToStackerNews(story *Story) (int, error) {
-	dupes := FetchStackerNewsDupes(story.Url)
-	if len(*dupes) > 0 {
-		log.Printf("%s was already posted. Skipping.\n", story.Url)
-		return -1, &DupesError{story.Url, *dupes}
+type PostStoryOptions struct {
+	SkipDupes bool
+}
+
+func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error) {
+	if !options.SkipDupes {
+		dupes := FetchStackerNewsDupes(story.Url)
+		if len(*dupes) > 0 {
+			log.Printf("%s was already posted. Skipping.\n", story.Url)
+			return -1, &DupesError{story.Url, *dupes}
+		}
 	}
 
 	body := GraphQLPayload{

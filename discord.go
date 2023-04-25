@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/dustin/go-humanize"
@@ -44,7 +45,8 @@ func initBot() {
 		log.Println("Logged in as", event.User.Username)
 	})
 	dg.AddHandler(onMessage)
-	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent
+	dg.AddHandler(onMessageReact)
+	dg.Identify.Intents = discordgo.IntentsGuildMessages | discordgo.IntentsMessageContent | discordgo.IntentGuildMessageReactions
 	err = dg.Open()
 	if err != nil {
 		log.Fatal("error opening connection to discord: ", err, " -- Is your token correct?")
@@ -56,23 +58,53 @@ func onMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	id, err := ParseHackerNewsLink(m.Content)
+	hackerNewsId, err := ParseHackerNewsLink(m.Content)
 	if err != nil {
 		return
 	}
-	story := FetchStoryById(id)
-	id, err = PostStoryToStackerNews(&story)
+	story := FetchStoryById(hackerNewsId)
+	_, err = PostStoryToStackerNews(&story, PostStoryOptions{SkipDupes: false})
 	if err != nil {
 		var dupesErr *DupesError
 		if errors.As(err, &dupesErr) {
-			SendDupesErrorToDiscord(dupesErr)
+			SendDupesErrorToDiscord(hackerNewsId, dupesErr)
 		} else {
 			log.Fatal("unexpected error returned")
 		}
 	}
 }
 
-func SendDupesErrorToDiscord(dupesErr *DupesError) {
+func onMessageReact(s *discordgo.Session, reaction *discordgo.MessageReactionAdd) {
+	if reaction.UserID == s.State.User.ID {
+		return
+	}
+	if reaction.Emoji.Name != "⏭️" {
+		return
+	}
+	m, err := s.ChannelMessage(reaction.ChannelID, reaction.MessageID)
+	if err != nil {
+		log.Println("error:", err)
+		return
+	}
+	if len(m.Embeds) == 0 {
+		return
+	}
+	embed := m.Embeds[0]
+	if !strings.Contains(embed.Title, "dupe(s) found for") {
+		return
+	}
+	id, err := ParseHackerNewsLink(embed.Footer.Text)
+	if err != nil {
+		return
+	}
+	story := FetchStoryById(id)
+	id, err = PostStoryToStackerNews(&story, PostStoryOptions{SkipDupes: true})
+	if err != nil {
+		log.Fatal("unexpected error returned")
+	}
+}
+
+func SendDupesErrorToDiscord(hackerNewsId int, dupesErr *DupesError) {
 	title := fmt.Sprintf("%d dupe(s) found for %s:", len(dupesErr.Dupes), dupesErr.Url)
 	color := 0xffc107
 	var fields []*discordgo.MessageEmbedField
@@ -119,6 +151,10 @@ func SendDupesErrorToDiscord(dupesErr *DupesError) {
 		Title:  title,
 		Color:  color,
 		Fields: fields,
+		Footer: &discordgo.MessageEmbedFooter{
+			Text:    HackerNewsItemLink(hackerNewsId),
+			IconURL: "https://news.ycombinator.com/y18.gif",
+		},
 	}
 	SendEmbedToDiscord(&embed)
 }
