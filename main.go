@@ -6,13 +6,20 @@ import (
 	"time"
 )
 
+func WaitUntilNextHour() {
+	now := time.Now()
+	dur := now.Truncate(time.Hour).Add(time.Hour).Sub(now)
+	log.Println("sleeping for", dur.Round(time.Second))
+	time.Sleep(dur)
+}
+
 func main() {
 	for {
 
 		stories, err := FetchHackerNewsTopStories()
 		if err != nil {
 			SendErrorToDiscord(err)
-			time.Sleep(time.Hour)
+			WaitUntilNextHour()
 			continue
 		}
 
@@ -31,6 +38,6 @@ func main() {
 			}
 			log.Println("Posting to SN ... OK")
 		}
-		time.Sleep(time.Hour)
+		WaitUntilNextHour()
 	}
 }
