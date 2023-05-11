@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,6 +18,10 @@ import (
 type GraphQLPayload struct {
 	Query     string                 `json:"query"`
 	Variables map[string]interface{} `json:"variables,omitempty"`
+}
+
+type GraphQLError struct {
+	Message string `json:"message"`
 }
 
 type User struct {
@@ -34,7 +39,8 @@ type Dupe struct {
 }
 
 type DupesResponse struct {
-	Data struct {
+	Errors []GraphQLError `json:"errors"`
+	Data   struct {
 		Dupes []Dupe `json:"dupes"`
 	} `json:"data"`
 }
@@ -54,6 +60,14 @@ type Comment struct {
 	User     User      `json:"user"`
 	Comments []Comment `json:"comments"`
 }
+
+type CreateCommentsResponse struct {
+	Errors []GraphQLError `json:"errors"`
+	Data   struct {
+		CreateComment Comment `json:"createComment"`
+	} `json:"data"`
+}
+
 type Item struct {
 	Id        int       `json:"id,string"`
 	Title     string    `json:"title"`
@@ -65,13 +79,15 @@ type Item struct {
 }
 
 type UpsertLinkResponse struct {
-	Data struct {
+	Errors []GraphQLError `json:"errors"`
+	Data   struct {
 		UpsertLink Item `json:"upsertLink"`
 	} `json:"data"`
 }
 
 type ItemsResponse struct {
-	Data struct {
+	Errors []GraphQLError `json:"errors"`
+	Data   struct {
 		Items struct {
 			Items  []Item `json:"items"`
 			Cursor string `json:"cursor"`
@@ -129,6 +145,17 @@ func CurateContentForStackerNews(stories *[]Story) *[]Story {
 	return &slice
 }
 
+func CheckForErrors(graphqlErrors []GraphQLError) error {
+	if len(graphqlErrors) > 0 {
+		errorMsg, marshalErr := json.Marshal(graphqlErrors)
+		if marshalErr != nil {
+			return marshalErr
+		}
+		return errors.New(fmt.Sprintf("error fetching SN dupes: %s", string(errorMsg)))
+	}
+	return nil
+}
+
 func FetchStackerNewsDupes(url string) (*[]Dupe, error) {
 	log.Printf("Fetching SN dupes (url=%s) ...\n", url)
 
@@ -161,6 +188,10 @@ func FetchStackerNewsDupes(url string) (*[]Dupe, error) {
 	err = json.NewDecoder(resp.Body).Decode(&dupesResp)
 	if err != nil {
 		err = fmt.Errorf("error decoding SN dupes: %w", err)
+		return nil, err
+	}
+	err = CheckForErrors(dupesResp.Errors)
+	if err != nil {
 		return nil, err
 	}
 
@@ -210,6 +241,10 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 		err = fmt.Errorf("error decoding SN upsertLink: %w", err)
 		return -1, err
 	}
+	err = CheckForErrors(upsertLinkResp.Errors)
+	if err != nil {
+		return -1, err
+	}
 	parentId := upsertLinkResp.Data.UpsertLink.Id
 
 	log.Printf("Posting to SN (url=%s) ... OK \n", story.Url)
@@ -251,6 +286,17 @@ func CommentStackerNewsPost(text string, parentId int) (*http.Response, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
+	var createCommentsResp CreateCommentsResponse
+	err = json.NewDecoder(resp.Body).Decode(&createCommentsResp)
+	if err != nil {
+		err = fmt.Errorf("error decoding SN upsertLink: %w", err)
+		return nil, err
+	}
+	err = CheckForErrors(createCommentsResp.Errors)
+	if err != nil {
+		return nil, err
+	}
 
 	log.Printf("Commenting SN post (parentId=%d) ... OK\n", parentId)
 	return resp, nil
