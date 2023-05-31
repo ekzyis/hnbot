@@ -95,6 +95,13 @@ type ItemsResponse struct {
 	} `json:"data"`
 }
 
+type HasNewNotesResponse struct {
+	Errors []GraphQLError `json:"errors"`
+	Data   struct {
+		HasNewNotes bool `json:"hasNewNotes"`
+	} `json:"data"`
+}
+
 var (
 	StackerNewsUrl = "https://stacker.news"
 	SnApiUrl       = "https://stacker.news/api/graphql"
@@ -317,4 +324,59 @@ func SendStackerNewsEmbedToDiscord(title string, id int) {
 		Timestamp: Timestamp,
 	}
 	SendEmbedToDiscord(&embed)
+}
+
+func SendNotificationsEmbedToDiscord() {
+	Timestamp := time.Now().Format(time.RFC3339)
+	color := 0xffc107
+	embed := discordgo.MessageEmbed{
+		Title: "new notifications",
+		URL:   "https://stacker.news/hn/posts",
+		Color: color,
+		Footer: &discordgo.MessageEmbedFooter{
+			Text:    "Stacker News",
+			IconURL: "https://stacker.news/favicon-notify.png",
+		},
+		Timestamp: Timestamp,
+	}
+	SendEmbedToDiscord(&embed)
+}
+
+func FetchHasNewNotes() (bool, error) {
+	log.Println("Checking notifications ...")
+
+	body := GraphQLPayload{
+		Query: `
+			{
+				hasNewNotes
+			}`,
+	}
+	resp, err := MakeStackerNewsRequest(body)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	var hasNewNotesResp HasNewNotesResponse
+	err = json.NewDecoder(resp.Body).Decode(&hasNewNotesResp)
+	if err != nil {
+		err = fmt.Errorf("error decoding SN hasNewNotes: %w", err)
+		return false, err
+	}
+	err = CheckForErrors(hasNewNotesResp.Errors)
+	if err != nil {
+		return false, err
+	}
+
+	hasNewNotes := hasNewNotesResp.Data.HasNewNotes
+
+	msg := "Checking notifications ... OK - "
+	if hasNewNotes {
+		msg += "NEW"
+	} else {
+		msg += "NONE"
+	}
+	log.Println(msg)
+
+	return hasNewNotes, nil
 }

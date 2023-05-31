@@ -13,7 +13,35 @@ func WaitUntilNextHour() {
 	time.Sleep(dur)
 }
 
+func WaitUntilNextMinute() {
+	now := time.Now()
+	dur := now.Truncate(time.Minute).Add(time.Minute).Sub(now)
+	log.Println("sleeping for", dur.Round(time.Second))
+	time.Sleep(dur)
+}
+
+func CheckNotifications() {
+	var prevHasNewNotes bool
+	for {
+		hasNewNotes, err := FetchHasNewNotes()
+		if err != nil {
+			SendErrorToDiscord(err)
+		} else {
+			if !prevHasNewNotes && hasNewNotes {
+				// only send embed on "rising edge"
+				SendNotificationsEmbedToDiscord()
+				log.Println("Forwarded to monitoring")
+			} else if hasNewNotes {
+				log.Println("Already forwarded")
+			}
+		}
+		prevHasNewNotes = hasNewNotes
+		WaitUntilNextMinute()
+	}
+}
+
 func main() {
+	go CheckNotifications()
 	for {
 
 		stories, err := FetchHackerNewsTopStories()
