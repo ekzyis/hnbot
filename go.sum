@@ -7,6 +7,8 @@ github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkp
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/ekzyis/sn-goapi v0.1.0 h1:B/v120DgYlpuzqkyiRTMb6C7JIoU3RaYE9M8D6m6OLQ=
 github.com/ekzyis/sn-goapi v0.1.0/go.mod h1:FObbYr/NXgnXNWU+EwiWKoWQy+wAaRS6AoW3NgsJ/Oo=
+github.com/ekzyis/sn-goapi v0.1.1 h1:FLCbaAIZ1qngtFZTfzkrp4HPFzHUPStdUgLHUPz82Jo=
+github.com/ekzyis/sn-goapi v0.1.1/go.mod h1:FObbYr/NXgnXNWU+EwiWKoWQy+wAaRS6AoW3NgsJ/Oo=
 github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=

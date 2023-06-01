@@ -25,7 +25,7 @@ func WaitUntilNextMinute() {
 func CheckNotifications() {
 	var prevHasNewNotes bool
 	for {
-		hasNewNotes, err := sn.HasNewNotes()
+		hasNewNotes, err := sn.CheckNotifications()
 		if err != nil {
 			SendErrorToDiscord(err)
 		} else {
