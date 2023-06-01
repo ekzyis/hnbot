@@ -8,6 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/dustin/go-humanize"
+	"github.com/ekzyis/sn-goapi"
 	"github.com/joho/godotenv"
 	"github.com/namsral/flag"
 )
@@ -64,7 +65,7 @@ func onMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	story, err := FetchStoryById(hackerNewsId)
 	_, err = PostStoryToStackerNews(&story, PostStoryOptions{SkipDupes: false})
 	if err != nil {
-		var dupesErr *DupesError
+		var dupesErr *sn.DupesError
 		if errors.As(err, &dupesErr) {
 			SendDupesErrorToDiscord(hackerNewsId, dupesErr)
 			return
@@ -107,7 +108,7 @@ func onMessageReact(s *discordgo.Session, reaction *discordgo.MessageReactionAdd
 	}
 }
 
-func SendDupesErrorToDiscord(hackerNewsId int, dupesErr *DupesError) {
+func SendDupesErrorToDiscord(hackerNewsId int, dupesErr *sn.DupesError) {
 	msg := fmt.Sprint(dupesErr)
 	log.Println(msg)
 
@@ -123,7 +124,7 @@ func SendDupesErrorToDiscord(hackerNewsId int, dupesErr *DupesError) {
 			},
 			&discordgo.MessageEmbedField{
 				Name:   "Id",
-				Value:  StackerNewsItemLink(dupe.Id),
+				Value:  sn.FormatLink(dupe.Id),
 				Inline: true,
 			},
 			&discordgo.MessageEmbedField{

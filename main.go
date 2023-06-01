@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log"
 	"time"
+
+	"github.com/ekzyis/sn-goapi"
 )
 
 func WaitUntilNextHour() {
@@ -23,7 +25,7 @@ func WaitUntilNextMinute() {
 func CheckNotifications() {
 	var prevHasNewNotes bool
 	for {
-		hasNewNotes, err := FetchHasNewNotes()
+		hasNewNotes, err := sn.HasNewNotes()
 		if err != nil {
 			SendErrorToDiscord(err)
 		} else {
@@ -56,7 +58,7 @@ func main() {
 		for _, story := range *filtered {
 			_, err := PostStoryToStackerNews(&story, PostStoryOptions{SkipDupes: false})
 			if err != nil {
-				var dupesErr *DupesError
+				var dupesErr *sn.DupesError
 				if errors.As(err, &dupesErr) {
 					SendDupesErrorToDiscord(story.ID, dupesErr)
 					continue
