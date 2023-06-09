@@ -60,7 +60,7 @@ func main() {
 			if err != nil {
 				var dupesErr *sn.DupesError
 				if errors.As(err, &dupesErr) {
-					SendDupesErrorToDiscord(story.ID, dupesErr)
+					// SendDupesErrorToDiscord(story.ID, dupesErr)
 					continue
 				}
 				SendErrorToDiscord(err)
