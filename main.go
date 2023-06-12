@@ -25,6 +25,7 @@ func WaitUntilNextMinute() {
 func CheckNotifications() {
 	var prevHasNewNotes bool
 	for {
+		log.Println("Checking notifications ...")
 		hasNewNotes, err := sn.CheckNotifications()
 		if err != nil {
 			SendErrorToDiscord(err)
@@ -32,9 +33,9 @@ func CheckNotifications() {
 			if !prevHasNewNotes && hasNewNotes {
 				// only send embed on "rising edge"
 				SendNotificationsEmbedToDiscord()
-				log.Println("Forwarded to monitoring")
+				log.Println("Forwarded notifications to monitoring")
 			} else if hasNewNotes {
-				log.Println("Already forwarded")
+				log.Println("Notifications already forwarded")
 			}
 		}
 		prevHasNewNotes = hasNewNotes
@@ -61,12 +62,12 @@ func main() {
 				var dupesErr *sn.DupesError
 				if errors.As(err, &dupesErr) {
 					// SendDupesErrorToDiscord(story.ID, dupesErr)
+					log.Println(dupesErr)
 					continue
 				}
 				SendErrorToDiscord(err)
 				continue
 			}
-			log.Println("Posting to SN ... OK")
 		}
 		WaitUntilNextHour()
 	}
