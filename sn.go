@@ -22,24 +22,28 @@ type PostStoryOptions struct {
 }
 
 func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error) {
-	log.Printf("Posting to SN (url=%s) ...\n", story.Url)
+	url := story.Url
+	if url == "" {
+		url = HackerNewsItemLink(story.ID)
+	}
+	log.Printf("Posting to SN (url=%s) ...\n", url)
 
 	if !options.SkipDupes {
-		dupes, err := sn.Dupes(story.Url)
+		dupes, err := sn.Dupes(url)
 		if err != nil {
 			return -1, err
 		}
 		if len(*dupes) > 0 {
-			return -1, &sn.DupesError{Url: story.Url, Dupes: *dupes}
+			return -1, &sn.DupesError{Url: url, Dupes: *dupes}
 		}
 	}
 
-	parentId, err := sn.PostLink(story.Url, story.Title, "tech")
+	parentId, err := sn.PostLink(url, story.Title, "tech")
 	if err != nil {
 		return -1, fmt.Errorf("error posting link: %w", err)
 	}
 
-	log.Printf("Posting to SN (url=%s) ... OK \n", story.Url)
+	log.Printf("Posting to SN (url=%s) ... OK \n", url)
 	SendStackerNewsEmbedToDiscord(story.Title, parentId)
 
 	comment := fmt.Sprintf(
