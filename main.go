@@ -43,8 +43,17 @@ func CheckNotifications() {
 	}
 }
 
+func SessionKeepAlive() {
+	for {
+		log.Println("Refresh session using GET /api/auth/session ...")
+		sn.RefreshSession()
+		WaitUntilNextHour()
+	}
+}
+
 func main() {
 	go CheckNotifications()
+	go SessionKeepAlive()
 	for {
 
 		stories, err := FetchHackerNewsTopStories()
