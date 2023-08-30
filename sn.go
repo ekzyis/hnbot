@@ -38,7 +38,7 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 		}
 	}
 
-	parentId, err := sn.PostLink(url, story.Title, "tech")
+	parentId, err := sn.PostLink(url, story.Title[0:80], "tech")
 	if err != nil {
 		return -1, fmt.Errorf("error posting link: %w", err)
 	}
