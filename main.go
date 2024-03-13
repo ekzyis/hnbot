@@ -59,11 +59,22 @@ func main() {
 		stories, err := FetchHackerNewsTopStories()
 		if err != nil {
 			SendErrorToDiscord(err)
-			WaitUntilNextHour()
+			WaitUntilNextMinute()
 			continue
 		}
 
-		filtered := CurateContentForStackerNews(&stories)
+		if err := SaveStories(&stories); err != nil {
+			SendErrorToDiscord(err)
+			WaitUntilNextMinute()
+			continue
+		}
+
+		var filtered *[]Story
+		if filtered, err = CurateContentForStackerNews(); err != nil {
+			SendErrorToDiscord(err)
+			WaitUntilNextMinute()
+			continue
+		}
 
 		for _, story := range *filtered {
 			_, err := PostStoryToStackerNews(&story, PostStoryOptions{SkipDupes: false})
@@ -78,6 +89,6 @@ func main() {
 				continue
 			}
 		}
-		WaitUntilNextHour()
+		WaitUntilNextMinute()
 	}
 }

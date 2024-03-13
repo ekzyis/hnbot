@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"time"
@@ -10,11 +11,38 @@ import (
 	"github.com/ekzyis/sn-goapi"
 )
 
-func CurateContentForStackerNews(stories *[]Story) *[]Story {
-	// TODO: filter by relevance
+func CurateContentForStackerNews() (*[]Story, error) {
+	var (
+		rows *sql.Rows
+		err  error
+	)
+	if rows, err = db.Query(`
+		SELECT t.id, time, title, url, author, score, ndescendants
+		FROM (
+			SELECT id, MAX(created_at) AS created_at FROM hn_items
+			WHERE rank = 1 AND id NOT IN (SELECT hn_id FROM sn_items)
+			GROUP BY id
+		) t JOIN hn_items ON t.id = hn_items.id AND t.created_at = hn_items.created_at;
+	`); err != nil {
+		err = fmt.Errorf("error querying hn_items: %w", err)
+		return nil, err
+	}
+	defer rows.Close()
 
-	slice := (*stories)[0:1]
-	return &slice
+	var stories []Story
+	for rows.Next() {
+		var story Story
+		if err = rows.Scan(&story.ID, &story.Time, &story.Title, &story.Url, &story.By, &story.Score, &story.Descendants); err != nil {
+			err = fmt.Errorf("error scanning hn_items: %w", err)
+			return nil, err
+		}
+		stories = append(stories, story)
+	}
+	if err = rows.Err(); err != nil {
+		err = fmt.Errorf("error iterating hn_items: %w", err)
+		return nil, err
+	}
+	return &stories, nil
 }
 
 type PostStoryOptions struct {
@@ -49,6 +77,10 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 	}
 
 	log.Printf("Posting to SN (url=%s) ... OK \n", url)
+	if err := SaveSnItem(parentId, story.ID); err != nil {
+		return -1, err
+	}
+
 	SendStackerNewsEmbedToDiscord(story.Title, parentId)
 
 	comment := fmt.Sprintf(
