@@ -83,6 +83,11 @@ func main() {
 				if errors.As(err, &dupesErr) {
 					// SendDupesErrorToDiscord(story.ID, dupesErr)
 					log.Println(dupesErr)
+					// save dupe in db to prevent retries
+					parentId := dupesErr.Dupes[0].Id
+					if err := SaveSnItem(parentId, story.ID); err != nil {
+						SendErrorToDiscord(err)
+					}
 					continue
 				}
 				SendErrorToDiscord(err)
