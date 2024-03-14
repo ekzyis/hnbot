@@ -1,6 +1,12 @@
 .env
 .vscode
+# python virtual environment
+venv
 
 # go executable
 hnbot
 hnbot.sqlite3
+
+*.csv
+*.png
+
