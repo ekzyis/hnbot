@@ -84,7 +84,8 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 	SendStackerNewsEmbedToDiscord(story.Title, parentId)
 
 	comment := fmt.Sprintf(
-		"This link was posted by [%s](%s) %s on [HN](%s). It received %d points and %d comments.",
+		"This link was posted by [%s](%s) %s on [HN](%s). It received %d points and %d comments.\n\n"+
+			fmt.Sprintf("https://files.ekzyis.com/public/hn/hn_%d.png", story.ID),
 		story.By,
 		HackerNewsUserLink(story.By),
 		humanize.Time(time.Unix(int64(story.Time), 0)),

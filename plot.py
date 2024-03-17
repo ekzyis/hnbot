@@ -58,3 +58,6 @@ for [hn_id], group in grouped:
 
     plt.tight_layout()
     plt.savefig(f'hn_{hn_id}.png')
+    plt.close()
+
+    print(f'Saved hn_{hn_id}.png')
