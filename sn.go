@@ -20,7 +20,7 @@ func CurateContentForStackerNews() (*[]Story, error) {
 		SELECT t.id, time, title, url, author, score, ndescendants
 		FROM (
 			SELECT id, MAX(created_at) AS created_at FROM hn_items
-			WHERE rank = 1 AND id NOT IN (SELECT hn_id FROM sn_items)
+			WHERE rank = 1 AND id NOT IN (SELECT hn_id FROM sn_items) AND length(title) >= 5
 			GROUP BY id
 		) t JOIN hn_items ON t.id = hn_items.id AND t.created_at = hn_items.created_at;
 	`); err != nil {
