@@ -8,36 +8,22 @@ import (
 	"github.com/ekzyis/sn-goapi"
 )
 
-func WaitUntilNextMinute() {
-	now := time.Now()
-	dur := now.Truncate(time.Minute).Add(time.Minute).Sub(now)
-	log.Println("sleeping for", dur.Round(time.Second))
-	time.Sleep(dur)
-}
-
-func WaitUntilNextRun() {
-	now := time.Now()
-	dur := now.Truncate(time.Minute).Add(15 * time.Minute).Sub(now)
-	log.Println("sleeping for", dur.Round(time.Second))
-	time.Sleep(dur)
-}
-
 func SyncStories() {
 	for {
+		now := time.Now()
+		dur := now.Truncate(time.Minute).Add(time.Minute).Sub(now)
+		log.Println("[hn] sleeping for", dur.Round(time.Second))
+		time.Sleep(dur)
+
 		stories, err := FetchHackerNewsTopStories()
 		if err != nil {
 			SendErrorToDiscord(err)
-			WaitUntilNextMinute()
 			continue
 		}
-
 		if err := SaveStories(&stories); err != nil {
 			SendErrorToDiscord(err)
-			WaitUntilNextMinute()
 			continue
 		}
-
-		WaitUntilNextMinute()
 	}
 }
 
@@ -49,9 +35,13 @@ func main() {
 			err      error
 		)
 
+		now := time.Now()
+		dur := now.Truncate(time.Minute).Add(15 * time.Minute).Sub(now)
+		log.Println("[sn] sleeping for", dur.Round(time.Second))
+		time.Sleep(dur)
+
 		if filtered, err = CurateContentForStackerNews(); err != nil {
 			SendErrorToDiscord(err)
-			WaitUntilNextRun()
 			continue
 		}
 
@@ -73,6 +63,5 @@ func main() {
 				continue
 			}
 		}
-		WaitUntilNextRun()
 	}
 }
