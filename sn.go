@@ -22,6 +22,8 @@ func CurateContentForStackerNews() (*[]Story, error) {
 			SELECT id, MAX(created_at) AS created_at FROM hn_items
 			WHERE rank = 1 AND id NOT IN (SELECT hn_id FROM sn_items) AND length(title) >= 5
 			GROUP BY id
+			ORDER BY time ASC
+			LIMIT 1
 		) t JOIN hn_items ON t.id = hn_items.id AND t.created_at = hn_items.created_at;
 	`); err != nil {
 		err = fmt.Errorf("error querying hn_items: %w", err)
