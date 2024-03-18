@@ -94,7 +94,9 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 		HackerNewsItemLink(story.ID),
 		story.Score, story.Descendants,
 	)
-	sn.CreateComment(parentId, comment)
+	if _, err := sn.CreateComment(parentId, comment); err != nil {
+		return -1, fmt.Errorf("error posting comment :%w", err)
+	}
 	return parentId, nil
 }
 
