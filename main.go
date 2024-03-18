@@ -15,6 +15,13 @@ func WaitUntilNextHour() {
 	time.Sleep(dur)
 }
 
+func WaitUntilNextMinute() {
+	now := time.Now()
+	dur := now.Truncate(time.Minute).Add(time.Minute).Sub(now)
+	log.Println("sleeping for", dur.Round(time.Second))
+	time.Sleep(dur)
+}
+
 func WaitUntilNextRun() {
 	now := time.Now()
 	dur := now.Truncate(time.Minute).Add(15 * time.Minute).Sub(now)
@@ -51,25 +58,35 @@ func SessionKeepAlive() {
 	}
 }
 
-func main() {
-	go CheckNotifications()
-	go SessionKeepAlive()
+func SyncStories() {
 	for {
-
 		stories, err := FetchHackerNewsTopStories()
 		if err != nil {
 			SendErrorToDiscord(err)
-			WaitUntilNextRun()
+			WaitUntilNextMinute()
 			continue
 		}
 
 		if err := SaveStories(&stories); err != nil {
 			SendErrorToDiscord(err)
-			WaitUntilNextRun()
+			WaitUntilNextMinute()
 			continue
 		}
 
-		var filtered *[]Story
+		WaitUntilNextMinute()
+	}
+}
+
+func main() {
+	go CheckNotifications()
+	go SessionKeepAlive()
+	go SyncStories()
+	for {
+		var (
+			filtered *[]Story
+			err      error
+		)
+
 		if filtered, err = CurateContentForStackerNews(); err != nil {
 			SendErrorToDiscord(err)
 			WaitUntilNextRun()
