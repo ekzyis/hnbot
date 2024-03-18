@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/bwmarrin/discordgo v0.27.1
 	github.com/dustin/go-humanize v1.0.1
-	github.com/ekzyis/sn-goapi v0.3.1
+	github.com/ekzyis/sn-goapi v0.3.3
 	github.com/joho/godotenv v1.5.1
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/namsral/flag v1.7.4-pre
