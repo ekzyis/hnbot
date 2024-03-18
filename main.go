@@ -15,9 +15,9 @@ func WaitUntilNextHour() {
 	time.Sleep(dur)
 }
 
-func WaitUntilNextMinute() {
+func WaitUntilNextRun() {
 	now := time.Now()
-	dur := now.Truncate(time.Minute).Add(time.Minute).Sub(now)
+	dur := now.Truncate(time.Minute).Add(15 * time.Minute).Sub(now)
 	log.Println("sleeping for", dur.Round(time.Second))
 	time.Sleep(dur)
 }
@@ -39,7 +39,7 @@ func CheckNotifications() {
 			}
 		}
 		prevHasNewNotes = hasNewNotes
-		WaitUntilNextMinute()
+		WaitUntilNextRun()
 	}
 }
 
@@ -59,20 +59,20 @@ func main() {
 		stories, err := FetchHackerNewsTopStories()
 		if err != nil {
 			SendErrorToDiscord(err)
-			WaitUntilNextMinute()
+			WaitUntilNextRun()
 			continue
 		}
 
 		if err := SaveStories(&stories); err != nil {
 			SendErrorToDiscord(err)
-			WaitUntilNextMinute()
+			WaitUntilNextRun()
 			continue
 		}
 
 		var filtered *[]Story
 		if filtered, err = CurateContentForStackerNews(); err != nil {
 			SendErrorToDiscord(err)
-			WaitUntilNextMinute()
+			WaitUntilNextRun()
 			continue
 		}
 
@@ -94,6 +94,6 @@ func main() {
 				continue
 			}
 		}
-		WaitUntilNextMinute()
+		WaitUntilNextRun()
 	}
 }
