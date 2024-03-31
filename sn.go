@@ -23,7 +23,8 @@ func CurateContentForStackerNews() (*[]Story, error) {
 			FROM hn_items
 			WHERE rank = 1 AND id NOT IN (SELECT hn_id FROM sn_items) AND length(title) >= 5
 			GROUP BY id
-			HAVING unixepoch(end) - unixepoch(start) >= 3600 ORDER BY time ASC
+			HAVING unixepoch(end) - unixepoch(start) >= 3600
+			ORDER BY time ASC
 			LIMIT 1
 		) t JOIN hn_items ON t.id = hn_items.id AND t.end = hn_items.created_at;
 	`); err != nil {
