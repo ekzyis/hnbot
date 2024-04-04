@@ -94,7 +94,7 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 		humanize.Time(time.Unix(int64(story.Time), 0)),
 		HackerNewsItemLink(story.ID),
 		story.Score, story.Descendants,
-	) + fmt.Sprintf("\n\nhttps://files.ekzyis.com/public/hn/hn_%d.png", story.ID)
+	)
 	if _, err := sn.CreateComment(parentId, comment); err != nil {
 		return -1, fmt.Errorf("error posting comment :%w", err)
 	}
