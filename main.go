@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/ekzyis/sn-goapi"
+	sn "github.com/ekzyis/snappy"
 )
 
 func SyncStories() {

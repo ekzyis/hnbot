@@ -8,7 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/dustin/go-humanize"
-	"github.com/ekzyis/sn-goapi"
+	sn "github.com/ekzyis/snappy"
 )
 
 func CurateContentForStackerNews() (*[]Story, error) {
@@ -54,6 +54,7 @@ type PostStoryOptions struct {
 }
 
 func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error) {
+	c := sn.NewClient()
 	url := story.Url
 	if url == "" {
 		url = HackerNewsItemLink(story.ID)
@@ -61,7 +62,7 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 	log.Printf("Posting to SN (url=%s) ...\n", url)
 
 	if !options.SkipDupes {
-		dupes, err := sn.Dupes(url)
+		dupes, err := c.Dupes(url)
 		if err != nil {
 			return -1, err
 		}
@@ -75,7 +76,16 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 		title = title[0:80]
 	}
 
-	parentId, err := sn.PostLink(url, title, "tech")
+	comment := fmt.Sprintf(
+		"This link was posted by [%s](%s) %s on [HN](%s). It received %d points and %d comments.",
+		story.By,
+		HackerNewsUserLink(story.By),
+		humanize.Time(time.Unix(int64(story.Time), 0)),
+		HackerNewsItemLink(story.ID),
+		story.Score, story.Descendants,
+	)
+
+	parentId, err := c.PostLink(url, title, comment, "tech")
 	if err != nil {
 		return -1, fmt.Errorf("error posting link: %w", err)
 	}
@@ -87,23 +97,12 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 
 	SendStackerNewsEmbedToDiscord(story.Title, parentId)
 
-	comment := fmt.Sprintf(
-		"This link was posted by [%s](%s) %s on [HN](%s). It received %d points and %d comments.",
-		story.By,
-		HackerNewsUserLink(story.By),
-		humanize.Time(time.Unix(int64(story.Time), 0)),
-		HackerNewsItemLink(story.ID),
-		story.Score, story.Descendants,
-	)
-	if _, err := sn.CreateComment(parentId, comment); err != nil {
-		return -1, fmt.Errorf("error posting comment :%w", err)
-	}
 	return parentId, nil
 }
 
 func SendStackerNewsEmbedToDiscord(title string, id int) {
 	Timestamp := time.Now().Format(time.RFC3339)
-	url := sn.FormatLink(id)
+	url := fmt.Sprintf("https://stacker.news/items/%d", id)
 	color := 0xffc107
 	embed := discordgo.MessageEmbed{
 		Title: title,

@@ -8,7 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/dustin/go-humanize"
-	"github.com/ekzyis/sn-goapi"
+	sn "github.com/ekzyis/snappy"
 	"github.com/joho/godotenv"
 	"github.com/namsral/flag"
 )
@@ -124,7 +124,7 @@ func SendDupesErrorToDiscord(hackerNewsId int, dupesErr *sn.DupesError) {
 			},
 			&discordgo.MessageEmbedField{
 				Name:   "Id",
-				Value:  sn.FormatLink(dupe.Id),
+				Value:  fmt.Sprintf("https://stacker.news/items/%d", dupe.Id),
 				Inline: true,
 			},
 			&discordgo.MessageEmbedField{
