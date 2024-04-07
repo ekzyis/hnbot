@@ -17,11 +17,11 @@ func SyncStories() {
 
 		stories, err := FetchHackerNewsTopStories()
 		if err != nil {
-			SendErrorToDiscord(err)
+			log.Println(err)
 			continue
 		}
 		if err := SaveStories(&stories); err != nil {
-			SendErrorToDiscord(err)
+			log.Println(err)
 			continue
 		}
 	}
@@ -41,7 +41,7 @@ func main() {
 		time.Sleep(dur)
 
 		if filtered, err = CurateContentForStackerNews(); err != nil {
-			SendErrorToDiscord(err)
+			log.Println(err)
 			continue
 		}
 
@@ -55,11 +55,11 @@ func main() {
 					// save dupe in db to prevent retries
 					parentId := dupesErr.Dupes[0].Id
 					if err := SaveSnItem(parentId, story.ID); err != nil {
-						SendErrorToDiscord(err)
+						log.Println(err)
 					}
 					continue
 				}
-				SendErrorToDiscord(err)
+				log.Println(err)
 				continue
 			}
 		}

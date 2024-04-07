@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/bwmarrin/discordgo"
 	"github.com/dustin/go-humanize"
 	sn "github.com/ekzyis/snappy"
 )
@@ -95,40 +94,5 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 		return -1, err
 	}
 
-	SendStackerNewsEmbedToDiscord(story.Title, parentId)
-
 	return parentId, nil
-}
-
-func SendStackerNewsEmbedToDiscord(title string, id int) {
-	Timestamp := time.Now().Format(time.RFC3339)
-	url := fmt.Sprintf("https://stacker.news/items/%d", id)
-	color := 0xffc107
-	embed := discordgo.MessageEmbed{
-		Title: title,
-		URL:   url,
-		Color: color,
-		Footer: &discordgo.MessageEmbedFooter{
-			Text:    "Stacker News",
-			IconURL: "https://stacker.news/favicon.png",
-		},
-		Timestamp: Timestamp,
-	}
-	SendEmbedToDiscord(&embed)
-}
-
-func SendNotificationsEmbedToDiscord() {
-	Timestamp := time.Now().Format(time.RFC3339)
-	color := 0xffc107
-	embed := discordgo.MessageEmbed{
-		Title: "new notifications",
-		URL:   "https://stacker.news/hn/posts",
-		Color: color,
-		Footer: &discordgo.MessageEmbedFooter{
-			Text:    "Stacker News",
-			IconURL: "https://stacker.news/favicon-notify.png",
-		},
-		Timestamp: Timestamp,
-	}
-	SendEmbedToDiscord(&embed)
 }
