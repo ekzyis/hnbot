@@ -41,9 +41,10 @@ func migrate(db *sql.DB) {
 	}
 	if _, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS sn_items (
-			id INTEGER PRIMARY KEY,
+			id INTEGER NOT NULL,
 			created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
-			hn_id INTEGER NOT NULL REFERENCES hn_items(id)
+			hn_id INTEGER NOT NULL REFERENCES hn_items(id),
+			PRIMARY KEY (id, hn_id)
 		);
 	`); err != nil {
 		err = fmt.Errorf("error during migration: %w", err)
