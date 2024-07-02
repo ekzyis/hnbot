@@ -1,6 +1,6 @@
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
-github.com/ekzyis/snappy v0.4.2 h1:5Tw13OIm+w4jTmO3O4c7HzyoiAhbxKl1WzqSoi6x8GQ=
-github.com/ekzyis/snappy v0.4.2/go.mod h1:BxJwdGlCwUw0Q5pQzBr59weAIS6pkVdivBBaZkkWTSo=
+github.com/ekzyis/snappy v0.5.1-0.20240702214736-049ea1f1c076 h1:9WC2mkujT2iyfFmLDdFJfCNfOCisGs+/pSqXGlFc7/M=
+github.com/ekzyis/snappy v0.5.1-0.20240702214736-049ea1f1c076/go.mod h1:BxJwdGlCwUw0Q5pQzBr59weAIS6pkVdivBBaZkkWTSo=
 github.com/mattn/go-sqlite3 v1.14.22 h1:2gZY6PC6kBnID23Tichd1K+Z0oS6nE/XwU+Vz/5o4kU=
 github.com/mattn/go-sqlite3 v1.14.22/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
