@@ -1,4 +1,4 @@
-module gitlab.com/ekzyis/hnbot
+module github.com/ekzyis/hnbot
 
 go 1.20
 

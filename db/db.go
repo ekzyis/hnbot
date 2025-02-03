@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/ekzyis/hnbot/hn"
 	_ "github.com/mattn/go-sqlite3"
-	"gitlab.com/ekzyis/hnbot/hn"
 )
 
 var (

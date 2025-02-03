@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/ekzyis/hnbot/db"
+	"github.com/ekzyis/hnbot/hn"
 	sn "github.com/ekzyis/snappy"
-	"gitlab.com/ekzyis/hnbot/db"
-	"gitlab.com/ekzyis/hnbot/hn"
 )
 
 type DupesError = sn.DupesError

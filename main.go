@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
-	"gitlab.com/ekzyis/hnbot/db"
-	"gitlab.com/ekzyis/hnbot/hn"
-	sn "gitlab.com/ekzyis/hnbot/sn"
+	"github.com/ekzyis/hnbot/db"
+	"github.com/ekzyis/hnbot/hn"
+	sn "github.com/ekzyis/hnbot/sn"
 )
 
 func SyncHnItemsToDb() {
