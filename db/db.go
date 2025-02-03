@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"database/sql"
@@ -6,19 +6,24 @@ import (
 	"log"
 
 	_ "github.com/mattn/go-sqlite3"
+	"gitlab.com/ekzyis/hnbot/hn"
 )
 
 var (
-	db *sql.DB
+	_db *sql.DB
 )
 
 func init() {
 	var err error
-	db, err = sql.Open("sqlite3", "hnbot.sqlite3")
+	_db, err = sql.Open("sqlite3", "hnbot.sqlite3")
 	if err != nil {
 		log.Fatal(err)
 	}
-	migrate(db)
+	migrate(_db)
+}
+
+func Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return _db.Query(query, args...)
 }
 
 func migrate(db *sql.DB) {
@@ -54,7 +59,7 @@ func migrate(db *sql.DB) {
 
 func ItemHasComment(parentId int) bool {
 	var count int
-	err := db.QueryRow(`SELECT COUNT(1) FROM comments WHERE parent_id = ?`, parentId).Scan(&count)
+	err := _db.QueryRow(`SELECT COUNT(1) FROM comments WHERE parent_id = ?`, parentId).Scan(&count)
 	if err != nil {
 		err = fmt.Errorf("error during item check: %w", err)
 		log.Fatal(err)
@@ -62,17 +67,17 @@ func ItemHasComment(parentId int) bool {
 	return count > 0
 }
 
-func SaveStories(story *[]Story) error {
+func SaveHnItems(story *[]hn.Item) error {
 	for i, s := range *story {
-		if err := SaveStory(&s, i+1); err != nil {
+		if err := SaveHnItem(&s, i+1); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func SaveStory(s *Story, rank int) error {
-	if _, err := db.Exec(`
+func SaveHnItem(s *hn.Item, rank int) error {
+	if _, err := _db.Exec(`
 			INSERT INTO hn_items(id, time, title, url, author, ndescendants, score, rank)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		s.ID, s.Time, s.Title, s.Url, s.By, s.Descendants, s.Score, rank); err != nil {
@@ -83,7 +88,7 @@ func SaveStory(s *Story, rank int) error {
 }
 
 func SaveSnItem(id int, hnId int) error {
-	if _, err := db.Exec(`INSERT INTO sn_items(id, hn_id) VALUES (?, ?)`, id, hnId); err != nil {
+	if _, err := _db.Exec(`INSERT INTO sn_items(id, hn_id) VALUES (?, ?)`, id, hnId); err != nil {
 		err = fmt.Errorf("error during sn item insert: %w", err)
 		return err
 	}

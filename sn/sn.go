@@ -1,4 +1,4 @@
-package main
+package sn
 
 import (
 	"database/sql"
@@ -8,9 +8,13 @@ import (
 
 	"github.com/dustin/go-humanize"
 	sn "github.com/ekzyis/snappy"
+	"gitlab.com/ekzyis/hnbot/db"
+	"gitlab.com/ekzyis/hnbot/hn"
 )
 
-func CurateContentForStackerNews() (*[]Story, error) {
+type DupesError = sn.DupesError
+
+func CurateContent() (*[]hn.Item, error) {
 	var (
 		rows *sql.Rows
 		err  error
@@ -32,33 +36,33 @@ func CurateContentForStackerNews() (*[]Story, error) {
 	}
 	defer rows.Close()
 
-	var stories []Story
+	var items []hn.Item
 	for rows.Next() {
-		var story Story
-		if err = rows.Scan(&story.ID, &story.Time, &story.Title, &story.Url, &story.By, &story.Score, &story.Descendants); err != nil {
+		var item hn.Item
+		if err = rows.Scan(&item.ID, &item.Time, &item.Title, &item.Url, &item.By, &item.Score, &item.Descendants); err != nil {
 			err = fmt.Errorf("error scanning hn_items: %w", err)
 			return nil, err
 		}
-		stories = append(stories, story)
+		items = append(items, item)
 	}
 	if err = rows.Err(); err != nil {
 		err = fmt.Errorf("error iterating hn_items: %w", err)
 		return nil, err
 	}
-	return &stories, nil
+	return &items, nil
 }
 
-type PostStoryOptions struct {
+type PostOptions struct {
 	SkipDupes bool
 }
 
-func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error) {
+func Post(item *hn.Item, options PostOptions) (int, error) {
 	c := sn.NewClient()
-	url := story.Url
+	url := item.Url
 	if url == "" {
-		url = HackerNewsItemLink(story.ID)
+		url = hn.ItemLink(item.ID)
 	}
-	log.Printf("Posting to SN (url=%s) ...\n", url)
+	log.Printf("post to SN: %s ...\n", url)
 
 	if !options.SkipDupes {
 		dupes, err := c.Dupes(url)
@@ -70,18 +74,18 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 		}
 	}
 
-	title := story.Title
+	title := item.Title
 	if len(title) > 80 {
 		title = title[0:80]
 	}
 
 	comment := fmt.Sprintf(
 		"This link was posted by [%s](%s) %s on [HN](%s). It received %d points and %d comments.",
-		story.By,
-		HackerNewsUserLink(story.By),
-		humanize.Time(time.Unix(int64(story.Time), 0)),
-		HackerNewsItemLink(story.ID),
-		story.Score, story.Descendants,
+		item.By,
+		hn.UserLink(item.By),
+		humanize.Time(time.Unix(int64(item.Time), 0)),
+		hn.ItemLink(item.ID),
+		item.Score, item.Descendants,
 	)
 
 	parentId, err := c.PostLink(url, title, comment, "tech")
@@ -89,8 +93,8 @@ func PostStoryToStackerNews(story *Story, options PostStoryOptions) (int, error)
 		return -1, fmt.Errorf("error posting link: %w", err)
 	}
 
-	log.Printf("Posting to SN (url=%s) ... OK \n", url)
-	if err := SaveSnItem(parentId, story.ID); err != nil {
+	log.Printf("post to SN: %s ... OK \n", url)
+	if err := db.SaveSnItem(parentId, item.ID); err != nil {
 		return -1, err
 	}
 
