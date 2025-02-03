@@ -8,6 +8,7 @@ import (
 	"github.com/ekzyis/hnbot/db"
 	"github.com/ekzyis/hnbot/hn"
 	sn "github.com/ekzyis/hnbot/sn"
+	"github.com/joho/godotenv"
 )
 
 func SyncHnItemsToDb() {
@@ -30,6 +31,10 @@ func SyncHnItemsToDb() {
 }
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatal(err)
+	}
+
 	// fetch HN front page every minute in the background and store state in db
 	go SyncHnItemsToDb()
 
