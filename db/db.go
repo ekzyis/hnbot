@@ -19,6 +19,11 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// fix 'database is locked' error
+	// see https://github.com/mattn/go-sqlite3/issues/274#issuecomment-191597862
+	_db.SetMaxOpenConns(1)
+
 	migrate(_db)
 }
 
