@@ -88,7 +88,7 @@ func Post(item *hn.Item, options PostOptions) (int, error) {
 		item.Score, item.Descendants,
 	)
 
-	parentId, err := c.PostLink(url, title, comment, "tech")
+	parentId, err := c.PostLink(url, title, comment, []string{"tech"})
 	if err != nil {
 		return -1, fmt.Errorf("error posting link: %w", err)
 	}
