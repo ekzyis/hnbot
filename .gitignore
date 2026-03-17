@@ -4,3 +4,6 @@
 # go executable
 hnbot
 hnbot.sqlite3
+
+# nix build
+result
