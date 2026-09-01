@@ -19,6 +19,7 @@ type Item struct {
 	Score       int
 	Title       string
 	Url         string
+	Text        string // HTML body, set for comments
 }
 
 var (
@@ -82,6 +83,23 @@ func FetchItemById(id int, hnItem *Item) error {
 
 	// log.Printf("[hn] fetch HN item %d ... OK\n", id)
 	return nil
+}
+
+// FetchTopComment returns the highest-ranked comment of the given item,
+// or nil if the item has no comments.
+func FetchTopComment(id int) (*Item, error) {
+	var item Item
+	if err := FetchItemById(id, &item); err != nil {
+		return nil, err
+	}
+	if len(item.Kids) == 0 {
+		return nil, nil
+	}
+	var comment Item
+	if err := FetchItemById(item.Kids[0], &comment); err != nil {
+		return nil, err
+	}
+	return &comment, nil
 }
 
 func ParseLink(link string) (int, error) {

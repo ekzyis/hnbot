@@ -3,7 +3,10 @@ package sn
 import (
 	"database/sql"
 	"fmt"
+	"html"
 	"log"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -88,6 +91,18 @@ func Post(item *hn.Item, options PostOptions) (int, error) {
 		item.Score, item.Descendants,
 	)
 
+	if topComment, err := hn.FetchTopComment(item.ID); err != nil {
+		log.Printf("error fetching top comment for HN item %d: %v\n", item.ID, err)
+	} else if topComment != nil && topComment.Text != "" {
+		comment += fmt.Sprintf(
+			"\n\n[Top comment](%s) by [%s](%s):\n\n%s",
+			hn.ItemLink(topComment.ID),
+			topComment.By,
+			hn.UserLink(topComment.By),
+			blockquote(truncate(htmlToMarkdown(topComment.Text), 500)),
+		)
+	}
+
 	parentId, err := c.PostLink(url, title, comment, []string{"tech"})
 	if err != nil {
 		return -1, fmt.Errorf("error posting link: %w", err)
@@ -99,4 +114,37 @@ func Post(item *hn.Item, options PostOptions) (int, error) {
 	}
 
 	return parentId, nil
+}
+
+var (
+	htmlParagraph = regexp.MustCompile(`(?i)<p>`)
+	htmlLink      = regexp.MustCompile(`(?i)<a\b[^>]*\bhref="([^"]*)"[^>]*>(.*?)</a>`)
+	htmlItalic    = regexp.MustCompile(`(?i)</?i>`)
+	htmlTag       = regexp.MustCompile(`<[^>]+>`)
+)
+
+// htmlToMarkdown converts an HN comment's HTML body into Markdown.
+func htmlToMarkdown(s string) string {
+	s = htmlParagraph.ReplaceAllString(s, "\n\n")
+	s = htmlLink.ReplaceAllString(s, "[$2]($1)")
+	s = htmlItalic.ReplaceAllString(s, "*")
+	s = htmlTag.ReplaceAllString(s, "")
+	s = html.UnescapeString(s)
+	return strings.TrimSpace(s)
+}
+
+func truncate(s string, max int) string {
+	r := []rune(s)
+	if len(r) <= max {
+		return s
+	}
+	return strings.TrimSpace(string(r[:max])) + "…"
+}
+
+func blockquote(s string) string {
+	lines := strings.Split(s, "\n")
+	for i, line := range lines {
+		lines[i] = "> " + line
+	}
+	return strings.Join(lines, "\n")
 }
