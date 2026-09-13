@@ -99,7 +99,7 @@ func Post(item *hn.Item, options PostOptions) (int, error) {
 			hn.ItemLink(topComment.ID),
 			topComment.By,
 			hn.UserLink(topComment.By),
-			blockquote(truncate(htmlToMarkdown(topComment.Text), 500)),
+			blockquote(truncate(htmlToMarkdown(topComment.Text), 1000)),
 		)
 	}
 
@@ -133,12 +133,29 @@ func htmlToMarkdown(s string) string {
 	return strings.TrimSpace(s)
 }
 
+var sentenceEnd = regexp.MustCompile(`[.!?]["')\]]?\s`)
+
+// truncate shortens s to at most max runes without cutting mid-sentence.
+// It prefers to break on a line boundary, then on a sentence boundary,
+// falling back to a word boundary if neither fits.
 func truncate(s string, max int) string {
 	r := []rune(s)
 	if len(r) <= max {
 		return s
 	}
-	return strings.TrimSpace(string(r[:max])) + "…"
+	head := string(r[:max])
+
+	if i := strings.LastIndex(head, "\n"); i > 0 {
+		return strings.TrimSpace(head[:i]) + "\n\n…"
+	}
+	if loc := sentenceEnd.FindAllStringIndex(head, -1); loc != nil {
+		i := loc[len(loc)-1][1]
+		return strings.TrimSpace(head[:i]) + " …"
+	}
+	if i := strings.LastIndex(head, " "); i > 0 {
+		return strings.TrimSpace(head[:i]) + " …"
+	}
+	return strings.TrimSpace(head) + "…"
 }
 
 func blockquote(s string) string {
